@@ -1,0 +1,25 @@
+@import '../../styles/app';
+  
+.tables-basic {
+  .table th {
+    font-size: $font-size-sm;
+  }
+  .float-right {
+    display: flex;
+    justify-content: flex-end; // 这将使所有子元素推到右边
+	height: 50px;
+    & > * { // 选中所有直接子元素
+	  height: 100%;
+	  align-items: center;
+      display: inline-block; // 默认情况下，flex项会拉伸，使用inline-block保持元素原有尺寸
+	}
+   }
+  .abc-checkbox label {
+    &::before {
+      background-color: transparent;
+    }
+    &::after {
+      color: #eee;
+    }
+  }
+}
