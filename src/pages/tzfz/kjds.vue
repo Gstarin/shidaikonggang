@@ -1,5 +1,3 @@
-
-</style>
 <template>
   <div class="tables-basic">
     <b-breadcrumb>
