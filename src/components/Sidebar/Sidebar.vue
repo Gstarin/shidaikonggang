@@ -40,7 +40,7 @@
         :childrenLinks="[         
 			{ header: '绩效考核', link: '/app/PerformanceAppraisal/Performance'},
 			{ header: '个人信息', link: '/app/PerformanceAppraisal/grxx'},
-			{ header: '人员展示', link: '/app/PerformanceAppraisal/yuanGong'},
+			{ header: '人员展示', link: '/app/PerformanceAppraisal/YuanGong'},
 			{ header: '部门绩效', link: '/app/PerformanceAppraisal/rwjx'},
 			{ header: '工程项目绩效', link: '/app/PerformanceAppraisal/gcxm'}
         ]"
@@ -194,7 +194,7 @@
       />
       <NavLink
         :activeItem="activeItem"
-        header="首钢盛业"
+        header="生物质电厂"
         link="/app/test13"
         iconName="fa fa-institution"
         index="test13"

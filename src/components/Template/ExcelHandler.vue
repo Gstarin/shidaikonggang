@@ -34,20 +34,34 @@
     </div>
     
     <!-- 隐藏的模板表格 -->
-    <el-table 
-      :data="[]" 
-      style="display:none;th: 100%" 
-      id="templateTable" 
-      height="500"
-    >
-      <el-table-column 
-        v-for="column in columns" 
-        :key="column.prop"
-        :prop="column.prop" 
-        :label="column.label" 
-        :width="column.width"
-      ></el-table-column>
-    </el-table>
+    <div style="display:none;">
+      <table id="templateTable">
+        <thead>
+          <tr>
+            <template v-for="column in columns">
+              <th 
+                v-if="column.children && column.children.length" 
+                :colspan="column.children.length"
+              >
+                {{ column.label }}
+              </th>
+              <th v-else :rowspan="2">
+                {{ column.label }}
+              </th>
+            </template>
+          </tr>
+          <tr>
+            <template v-for="column in columns">
+              <template v-if="column.children && column.children.length">
+                <th v-for="child in column.children" :key="child.prop">
+                  {{ child.label }}
+                </th>
+              </template>
+            </template>
+          </tr>
+        </thead>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -84,8 +98,15 @@ export default {
             const workbook = XLSX.read(data, { type: 'array' })
             const worksheet = workbook.Sheets[workbook.SheetNames[0]]
             
-            // 获取表头行
-            const headers = that.columns.map(col => col.prop)
+            // 获取所有列(包括子列)
+            const allColumns = []
+            that.columns.forEach(column => {
+              if (column.children && column.children.length) {
+                allColumns.push(...column.children)
+              } else {
+                allColumns.push(column)
+              }
+            })
             
             // 转换整个工作表为JSON
             const jsonData = XLSX.utils.sheet_to_json(worksheet)
@@ -93,15 +114,15 @@ export default {
             const newData = jsonData.map(row => {
               const obj = {}
               // 确保只处理我们需要的列
-              headers.forEach((header, index) => {
-                const excelHeader = that.columns[index].label // 使用label匹配Excel表头
+              allColumns.forEach((column) => {
+                const excelHeader = column.label // 使用label匹配Excel表头
                 const value = row[excelHeader]
                 
                 // 处理数值类型
                 if (typeof value === 'number') {
-                  obj[header] = value.toFixed(2)
+                  obj[column.prop] = value.toFixed(2)
                 } else {
-                  obj[header] = value || '' // 防止undefined
+                  obj[column.prop] = value || '' // 防止undefined
                 }
               })
               return obj
@@ -138,15 +159,37 @@ export default {
       
       // 创建表头
       const thead = document.createElement('thead');
-      const tr = document.createElement('tr');
       
+      // 第一行表头(主标题)
+      const tr1 = document.createElement('tr');
       this.columns.forEach(column => {
-        const th = document.createElement('th');
-        th.textContent = column.label;
-        tr.appendChild(th);
+        if (column.children && column.children.length) {
+          const th = document.createElement('th');
+          th.setAttribute('colspan', column.children.length);
+          th.textContent = column.label;
+          tr1.appendChild(th);
+        } else {
+          const th = document.createElement('th');
+          th.setAttribute('rowspan', '2');
+          th.textContent = column.label;
+          tr1.appendChild(th);
+        }
       });
+      thead.appendChild(tr1);
       
-      thead.appendChild(tr);
+      // 第二行表头(子标题)
+      const tr2 = document.createElement('tr');
+      this.columns.forEach(column => {
+        if (column.children && column.children.length) {
+          column.children.forEach(child => {
+            const th = document.createElement('th');
+            th.textContent = child.label;
+            tr2.appendChild(th);
+          });
+        }
+      });
+      thead.appendChild(tr2);
+      
       tempTable.appendChild(thead);
       
       // 创建表格内容
@@ -154,10 +197,20 @@ export default {
       
       const dataToExport = this.isSearching ? this.searchResults : this.filteredItems;
       
+      // 获取所有列(包括子列)
+      const allColumns = []
+      this.columns.forEach(column => {
+        if (column.children && column.children.length) {
+          allColumns.push(...column.children)
+        } else {
+          allColumns.push(column)
+        }
+      })
+      
       dataToExport.forEach(item => {
         const tr = document.createElement('tr');
         
-        this.columns.forEach(column => {
+        allColumns.forEach(column => {
           const td = document.createElement('td');
           td.textContent = item[column.prop] || '';
           tr.appendChild(td);
@@ -186,11 +239,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.excel-handler {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-</style>

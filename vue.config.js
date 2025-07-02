@@ -5,9 +5,11 @@ module.exports = {
   productionSourceMap: false,
   devServer: { 
     disableHostCheck: true,
+    host:'0.0.0.0',
+    port: 65002,
     proxy: {
       '/api': {
-        target: 'http://111.11.15.235:65001',
+        target: 'http://localhost:65001',
         changeOrigin: true,
         logLevel: 'debug'
       }

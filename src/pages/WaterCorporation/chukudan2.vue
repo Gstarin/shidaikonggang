@@ -91,9 +91,6 @@ export default {
       }
     }
   },
-  mounted() {
-    this.loadData()
-  },
   methods: {
     updateTableData(newData) {
       this.items = newData

@@ -264,7 +264,7 @@ const upload = multer({
 });
 
 // 2. 修改上传路由
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+app.post('/api/uploads', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       console.log('请求体:', req.body); // 调试日志

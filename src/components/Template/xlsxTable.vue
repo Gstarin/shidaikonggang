@@ -1,8 +1,13 @@
 <!-- TableTemplate.vue -->
 <template>
   <div class="table-container">
+    <input
+      type="file"
+      ref="fileInput"
+      style="display: none"
+      @change="onFileChange($event, currentRow, currentProp)"
+    >
     <div class="table-header d-flex align-items-center mb-3">
-      <!-- 使用 ExcelHandler 组件 -->
       <excel-handler
         v-if="showExcelHandler"
         :columns="columns"
@@ -47,153 +52,58 @@
         border
       >
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column 
-          v-for="column in columns" 
-          :key="column.prop"
-          :prop="column.prop" 
-          :label="column.label" 
-          :width="column.width"
-        >
-          <!-- 多行表头支持 -->
-          <template v-if="column.children && column.children.length" #header>
-            <div class="multi-header">
-              <div class="header-row main-header">{{ column.label }}</div>
-              <div class="header-row sub-header">
-                <span v-for="child in column.children" :key="child.prop">{{ child.label }}</span>
-              </div>
-            </div>
-          </template>
+        
+        <!-- 统一处理所有列 -->
+        <template v-for="column in processedColumns">
+          <!-- 有子列的情况 -->
+          <el-table-column 
+            v-if="column.children && column.children.length"
+            :key="column.label"
+            :label="column.label"
+            :width="column.width"
+          >
+            <el-table-column 
+              v-for="child in column.children"
+              :key="child.prop"
+              :prop="child.prop"
+              :label="child.label"
+              :width="child.width"
+            >
+              <template v-slot="scope">
+                <table-cell
+                  :column="child"
+                  :row="scope.row"
+                  :edit-mode="editMode"
+                  @file-upload="handleFileUpload"
+                  @file-view="handleFileView"
+                  @file-delete="handleFileDelete"
+                  @row-click="$emit('row-click', scope.row)"
+                />
+              </template>
+            </el-table-column>
+          </el-table-column>
           
-          <template v-slot="scope">
-            <!-- 变量类型字段的特殊处理 -->
-            <span v-if="column.type === 'variable'">
-              {{ scope.row[column.prop] }}
-            </span>
-              <div v-if="column.type === 'actions'" class="action-buttons">
-                <b-button
-                  v-for="(action, idx) in column.actions"
-                  :key="idx"
-                  :variant="action.variant || 'default'"
-                  :size="action.size || 'sm'"
-                  class="mr-2"
-                  @click.stop="action.handler(scope.row)"
-                >
-                  {{ action.label }}
-                </b-button>
-            </div>
-            <!-- 文件类型字段的特殊处理 -->
-            <div v-if="column.type === 'file'" class="file-cell">
-              <!-- 1. 已上传文件显示 -->
-              <div class="uploaded-files">
-                <span v-if="!scope.row[column.prop]">无</span>
-                <span v-else>
-                  {{ scope.row[column.prop].originalname }}
-                  <br>
-                  <small>({{ formatFileSize(scope.row[column.prop].size) }})</small>
-                </span>
-              </div>
-              
-              <!-- 2. 上传按钮 -->
-              <b-button 
-                variant="outline-primary" 
-                size="sm" 
-                @click="handleFileUpload(scope.row, column.prop)"
-                class="mt-2"
-              >
-                上传文件
-              </b-button>
-              
-              <!-- 3. 查看按钮 -->
-              <b-button 
-                variant="outline-info" 
-                size="sm" 
-                @click="handleFileView(scope.row, column.prop)"
-                class="mt-2"
-                :disabled="!scope.row[column.prop]"
-              >
-                查看文件
-              </b-button>
-              
-              <!-- 删除按钮 -->
-              <b-button 
-                variant="outline-danger" 
-                size="sm" 
-                @click="handleFileDelete(scope.row, column.prop)"
-                class="mt-2"
-                :disabled="!scope.row[column.prop]"
-              >
-                删除文件
-              </b-button>
-              
-              <!-- 隐藏的文件输入 -->
-              <input 
-                type="file" 
-                :ref="`fileInput_${scope.$index}_${column.prop}`" 
-                style="display: none" 
-                @change="(e) => onFileChange(e, scope.row, column.prop)"
-              >
-            </div>
-            <template v-if="editMode">
-              <!-- 日期类型字段 -->
-              <el-date-picker
-                v-if="column.type === 'date'"
-                v-model="scope.row[column.prop]"
-                type="date"
-                placeholder="选择日期"
-                value-format="yyyy-MM-dd"
-                style="width: 100%"
-                :disabled="scope.row.isTotal"
-              ></el-date-picker>
-              
-              <!-- 下拉选择类型字段 -->
-              <el-select
-                v-else-if="column.options"
-                v-model="scope.row[column.prop]"
-                placeholder="请选择"
-                style="width: 100%"
-                :disabled="scope.row.isTotal"
-              >
-                <el-option
-                  v-for="item in column.options"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                ></el-option>
-              </el-select>
-              
-              <!-- 数字类型字段 -->
-              <el-input
-                v-else-if="column.type === 'number'"
-                v-model.number="scope.row[column.prop]"
-                type="number"
-                :disabled="scope.row.isTotal"
-              ></el-input>
-              
-              <!-- 普通文本字段 -->
-              <el-input
-                v-else
-                v-model="scope.row[column.prop]"
-                :disabled="scope.row.isTotal"
-              ></el-input>
-              
+          <!-- 没有子列的情况 -->
+          <el-table-column 
+            v-else
+            :key="column.prop"
+            :prop="column.prop" 
+            :label="column.label" 
+            :width="column.width"
+          >
+            <template v-slot="scope">
+              <table-cell
+                :column="column"
+                :row="scope.row"
+                :edit-mode="editMode"
+                @file-upload="handleFileUpload"
+                @file-view="handleFileView"
+                @file-delete="handleFileDelete"
+                @row-click="$emit('row-click', scope.row)"
+              />
             </template>
-            
-            
-            <!-- 非编辑模式下的显示 -->
-            <template v-else>
-              <span 
-                v-if="column.slot"
-                class="clickable"
-                @click="$emit('row-click', scope.row)"
-              >
-                {{ scope.row[column.prop] }}
-              </span>
-              <span v-else>
-                {{ scope.row[column.prop] }}
-              </span>
-            </template>
-          </template>
-        </el-table-column>
+          </el-table-column>
+        </template>
       </el-table>
       
       <el-dialog  
@@ -208,6 +118,7 @@
             v-for="column in columns" 
             :key="column.prop" 
             :label="column.label"
+            v-if="!column.children"
           >
             <el-input v-model="form[column.prop]"></el-input>
           </el-form-item>
@@ -226,15 +137,178 @@
   </div>
 </template>
 
-
 <script>
 import ExcelHandler from './ExcelHandler.vue'
 import dbInstance from '@/database/db.js'
 import axios from '@/utils/axios.js'
 
+// 独立的单元格组件
+const TableCell = {
+  props: ['column', 'row', 'editMode'],
+  render(h) {
+    const { column, row, editMode } = this
+    
+    // 变量类型字段
+    if (column.type === 'variable') {
+      return h('span', row[column.prop])
+    }
+    
+    // 操作按钮类型
+    if (column.type === 'actions') {
+      return h('div', { class: 'action-buttons' }, 
+        column.actions.map(action => 
+          h('b-button', {
+            props: {
+              variant: action.variant || 'default',
+              size: action.size || 'sm'
+            },
+            class: 'mr-2',
+            on: {
+              click: e => {
+                e.stopPropagation()
+                action.handler(row)
+              }
+            }
+          }, action.label)
+        )
+      )
+    }
+    
+    // 文件类型字段
+    if (column.type === 'file') {
+      return h('div', { class: 'file-cell' }, [
+        h('div', { class: 'uploaded-files' }, [
+          !row[column.prop] ? h('span', '无') : h('span', [
+            row[column.prop].originalname,
+            h('br'),
+            h('small', `(${this.formatFileSize(row[column.prop].size)})`)
+          ])
+        ]),
+        h('b-button', {
+          props: {
+            variant: 'outline-primary',
+            size: 'sm'
+          },
+          class: 'mt-2',
+          on: {
+            click: () => this.$emit('file-upload', row, column.prop)
+          }
+        }, '上传文件'),
+        h('b-button', {
+          props: {
+            variant: 'outline-info',
+            size: 'sm',
+            disabled: !row[column.prop]
+          },
+          class: 'mt-2',
+          on: {
+            click: () => this.$emit('file-view', row, column.prop)
+          }
+        }, '查看文件'),
+        h('b-button', {
+          props: {
+            variant: 'outline-danger',
+            size: 'sm',
+            disabled: !row[column.prop]
+          },
+          class: 'mt-2',
+          on: {
+            click: () => this.$emit('file-delete', row, column.prop)
+          }
+        }, '删除文件')
+      ])
+    }
+    
+    // 编辑模式下的各种控件
+    if (editMode) {
+      // 日期选择器
+      if (column.type === 'date') {
+        return h('el-date-picker', {
+          props: {
+            value: row[column.prop],
+            type: 'date',
+            placeholder: '选择日期',
+            'value-format': 'yyyy-MM-dd',
+            disabled: row.isTotal
+          },
+          style: { width: '100%' },
+          on: {
+            input: val => { row[column.prop] = val }
+          }
+        })
+      }
+      
+      // 下拉选择
+      if (column.options) {
+        return h('el-select', {
+          props: {
+            value: row[column.prop],
+            placeholder: '请选择',
+            disabled: row.isTotal
+          },
+          style: { width: '100%' },
+          on: {
+            input: val => { row[column.prop] = val }
+          }
+        }, column.options.map(option => 
+          h('el-option', {
+            props: {
+              label: option.label,
+              value: option.value
+            }
+          })
+        ))
+      }
+      
+      // 数字输入
+      if (column.type === 'number') {
+        return h('el-input', {
+          props: {
+            value: row[column.prop],
+            type: 'number',
+            disabled: row.isTotal
+          },
+          on: {
+            input: val => { row[column.prop] = Number(val) }
+          }
+        })
+      }
+      
+      // 普通文本输入
+      return h('el-input', {
+        props: {
+          value: row[column.prop],
+          disabled: row.isTotal
+        },
+        on: {
+          input: val => { row[column.prop] = val }
+        }
+      })
+    }
+    
+    // 非编辑模式下的显示
+    return h('span', {
+      class: { clickable: column.slot },
+      on: column.slot ? {
+        click: () => this.$emit('row-click', row)
+      } : {}
+    }, row[column.prop])
+  },
+  methods: {
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i])
+    },
+  }
+}
+
 export default {
   components: {
-    ExcelHandler
+    ExcelHandler,
+    TableCell
   },
   created() {
     this.resetForm()
@@ -246,19 +320,19 @@ export default {
       type: Array,
       default: () => [],
       validator: (columns) => {
-      return columns.every(col => {
-        const isValid = col.prop && col.label;
-        if (col.children) {
-          return col.children.every(child => child.prop && child.label);
-        }
-        if (col.type === 'actions') {
-          return Array.isArray(col.actions) && col.actions.every(action => 
-            action.label && typeof action.handler === 'function'
-          );
-        }
-        return isValid;
-      });
-    }
+        return columns.every(col => {
+          const isValid = col.prop && col.label
+          if (col.children) {
+            return col.children.every(child => child.prop && child.label)
+          }
+          if (col.type === 'actions') {
+            return Array.isArray(col.actions) && col.actions.every(action => 
+              action.label && typeof action.handler === 'function'
+            )
+          }
+          return isValid
+        })
+      }
     },
     units: Array,
     apiEndpoint: String,
@@ -269,7 +343,7 @@ export default {
     },
     showExcelHandler: {
       type: Boolean,
-      default: true  // 默认显示 ExcelHandler
+      default: true
     },
     customFilter1: {
       type: Function,
@@ -297,17 +371,21 @@ export default {
       editingValue: '',
       editingcolumn: null,
       form: {},
-      editMode: false // 添加编辑模式状态
+      editMode: false,
+      currentRow: null,
+      currentProp: null,
     }
   },
   computed: {
+    processedColumns() {
+      return this.columns
+    },
     filteredItems() {
       return this.tableData || []
     },
     displayData() {
       let data = this.tableData || []
       
-      // 应用自定义筛选（如果有）
       if (this.$scopedSlots['custom-filter1'] && this.customFilter1) {
         data = data.filter(this.customFilter1)
       }
@@ -334,7 +412,6 @@ export default {
     }
   },
   methods: {
-    // Excel 相关事件处理
     updateTableData(newData) {
       this.$emit('update:tableData', newData)
     },
@@ -353,14 +430,13 @@ export default {
     },
     
     handleExcelExported() {
-      // 可以在这里添加导出成功后的处理
+      this.$message.success('Excel导出成功')
     },
     
     handleTemplateExported() {
-      // 可以在这里添加模板导出成功后的处理
+      this.$message.success('模板导出成功')
     },
     
-    // 其他原有方法保持不变
     performSearch() {
       if (!this.searchText.trim()) {
         this.clearSearch()
@@ -372,6 +448,12 @@ export default {
       
       this.searchResults = this.filteredItems.filter(item => {
         return this.columns.some(column => {
+          if (column.children) {
+            return column.children.some(child => {
+              const value = item[child.prop]
+              return value && value.toString().toLowerCase().includes(searchTerm)
+            })
+          }
           const value = item[column.prop]
           return value && value.toString().toLowerCase().includes(searchTerm)
         })
@@ -386,20 +468,25 @@ export default {
       this.searchResults = []
       this.currentPage = 1
     },
-    // 添加计算变量的方法
+    
     calculateVariables(row) {
       this.columns.forEach(column => {
         if (column.type === 'variable' && typeof column.calculate === 'function') {
-          // 使用Vue.set确保响应式更新
           this.$set(row, column.prop, column.calculate(row))
+        }
+        if (column.children) {
+          column.children.forEach(child => {
+            if (child.type === 'variable' && typeof child.calculate === 'function') {
+              this.$set(row, child.prop, child.calculate(row))
+            }
+          })
         }
       })
     },
     
-    // 修改submitForm方法，添加变量计算
     submitForm() {
       const newRow = { ...this.form }
-      this.calculateVariables(newRow) // 计算变量值
+      this.calculateVariables(newRow)
       const newData = [...this.tableData, newRow]
       this.$emit('update:tableData', newData)
       this.dialogVisible = false
@@ -416,13 +503,6 @@ export default {
     showAddDialog() {
       this.resetForm()
       this.dialogVisible = true
-    },
-    
-    submitForm() {
-      const newRow = { ...this.form }
-      const newData = [...this.tableData, newRow]
-      this.$emit('update:tableData', newData)
-      this.dialogVisible = false
     },
     
     handleCellDblclick(row, column, cell, event) {
@@ -462,24 +542,24 @@ export default {
     
     async save() {
       try {
-        await dbInstance.save(this.storageKey, this.tableData);
-        this.$message.success('数据保存成功');
-        this.$emit('save-success');
+        await dbInstance.save(this.storageKey, this.tableData)
+        this.$message.success('数据保存成功')
+        this.$emit('save-success')
       } catch (error) {
-        console.error('保存数据时出错:', error);
-        this.$message.error('保存数据失败: ' + (error.message || '未知错误'));
-        this.$emit('save-error', error);
+        console.error('保存数据时出错:', error)
+        this.$message.error('保存数据失败: ' + (error.message || '未知错误'))
+        this.$emit('save-error', error)
       }
     },
     
     async silentsave() {
       try {
-        await dbInstance.save(this.storageKey, this.tableData);
-        this.$emit('save-success');
+        await dbInstance.save(this.storageKey, this.tableData)
+        this.$emit('save-success')
       } catch (error) {
-        console.error('保存数据时出错:', error);
-        this.$message.error('保存数据失败: ' + (error.message || '未知错误'));
-        this.$emit('save-error', error);
+        console.error('保存数据时出错:', error)
+        this.$message.error('保存数据失败: ' + (error.message || '未知错误'))
+        this.$emit('save-error', error)
       }
     },
     
@@ -496,74 +576,49 @@ export default {
         this.$emit('load-error', error)
       }
     },
-    // 触发文件上传
+    
     handleFileUpload(row, prop) {
-      const inputRef = `fileInput_${this.tableData.indexOf(row)}_${prop}`;
-      this.$refs[inputRef][0].click();
+      this.currentRow = row
+      this.currentProp = prop
+      this.$refs.fileInput.click()
     },
     
-    // 处理文件选择
     async onFileChange(e, row, prop) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files[0]
+      if (!file) return
       
-        try {
-        await this.$confirm('这会删除原本的文件，确定吗?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        });
-        
-        // 获取文件信息
-        const fileInfo = row[prop];
-        
-        const response = await axios.delete('/api/delete', {
-          data: {
-            filename: fileInfo.filename,
-            path: fileInfo.path
-          }
-        });
-        
-        
-      } catch (error) {
-        if (error !== 'cancel') { // 不是用户取消的情况
-          console.error('删除文件失败:', error);
-          this.$message.error('删除文件失败: ' + (error.message || '未知错误'));
-        } else {
-          this.$message.info('已取消上传');
-          
-          return
-        }
-
-      }
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // 添加原始文件名到FormData
-        formData.append('originalname', encodeURIComponent(file.name));
-        
-        console.log('准备上传的文件:', file);
-        console.log('FormData内容:');
-        for (let [key, value] of formData.entries()) {
-          console.log(key, value);
+        if (row[prop]) {
+          await this.$confirm('这会删除原本的文件，确定吗?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          })
+          
+          const fileInfo = row[prop]
+          await axios.delete('/api/delete', {
+            data: {
+              filename: fileInfo.filename,
+              path: fileInfo.path
+            }
+          })
         }
-
-        const res = await axios.post('/api/upload', formData, {
+        
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('originalname', encodeURIComponent(file.name))
+        
+        const res = await axios.post('/api/uploads', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
-        });
-
-        console.log('上传响应:', res.data);
+        })
         
-        // 确保响应中包含原始文件名
         const responseData = {
           ...res.data,
           originalname: decodeURIComponent(res.data.originalname || file.name)
-        };
+        }
         
-        // 创建新对象确保Vue能检测到变化
         const newRow = {
           ...row,
           [prop]: { 
@@ -573,37 +628,29 @@ export default {
             path: decodeURIComponent(responseData.path),
             url: responseData.url
           }
-        };
+        }
         
-        // 更新表格数据
-        const index = this.tableData.indexOf(row);
-        this.tableData.splice(index, 1, newRow);
+        const index = this.tableData.indexOf(row)
+        this.tableData.splice(index, 1, newRow)
         this.calculateVariables(newRow)
-        this.$emit('update:tableData', [...this.tableData]);
+        this.$emit('update:tableData', [...this.tableData])
         
-        this.$message.success('文件上传成功');
+        this.$message.success('文件上传成功')
       } catch (error) {
-        console.error('上传失败:', error);
+        if (error !== 'cancel') {
+          console.error('上传失败:', error)
+          this.$message.error(error.message || '文件上传失败')
+        } else {
+          this.$message.info('已取消上传')
+        }
       } finally {
-        // 重置文件输入，允许重复上传相同文件
-        e.target.value = '';
+        e.target.value = ''
       }
     },
-    formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    },
+    
     handleFileView(row, prop) {
-      if (!row[prop]) return;
-      
-      const fileInfo = row[prop];
-      console.error(fileInfo);
-      // 强制替换端口号
-      const correctUrl = fileInfo.path.replace(':3001', ':3000');
-      window.open(fileInfo.url, '_blank');
+      if (!row[prop]) return
+      window.open(row[prop].url, '_blank')
     },
 
     async handleFileDelete(row, prop) {
@@ -612,57 +659,58 @@ export default {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
-        });
+        })
         
-        // 获取文件信息
-        const fileInfo = row[prop];
-        if (!fileInfo) return;
+        const fileInfo = row[prop]
+        if (!fileInfo) return
         
-        // 1. 先调用API删除服务器上的文件
         const response = await axios.delete('/api/delete', {
           data: {
             filename: fileInfo.filename,
             path: fileInfo.path
           }
-        });
+        })
         
         if (response.data.success) {
-          // 2. 更新前端表格数据
-          const newRow = { ...row, [prop]: null };
-          const index = this.tableData.indexOf(row);
-          this.tableData.splice(index, 1, newRow);
+          const newRow = { ...row, [prop]: null }
+          const index = this.tableData.indexOf(row)
+          this.tableData.splice(index, 1, newRow)
           this.calculateVariables(newRow)
-          this.$emit('update:tableData', [...this.tableData]);
+          this.$emit('update:tableData', [...this.tableData])
           
-          this.$message.success('文件已删除');
+          this.$message.success('文件已删除')
         } else {
-          throw new Error(response.data.error || '删除文件失败');
+          throw new Error(response.data.error || '删除文件失败')
         }
       } catch (error) {
-        if (error !== 'cancel') { // 不是用户取消的情况
-          console.error('删除文件失败:', error);
-          this.$message.error('删除文件失败: ' + (error.message || '未知错误'));
+        if (error !== 'cancel') {
+          console.error('删除文件失败:', error)
+          this.$message.error(error.message || '删除文件失败')
         } else {
-          this.$message.info('已取消删除');
+          this.$message.info('已取消删除')
         }
       }
     },
+    
+    isNumeric(n) {
+      return !isNaN(parseFloat(n)) && isFinite(n)
+    }
   },
   beforeDestroy() {
     this.silentsave().catch(error => {
-      console.error('自动保存失败:', error);
-    });
+      console.error('自动保存失败:', error)
+    })
   },
   watch: {
-      tableData: {
-        deep: true,
-        handler(newVal) {
-          newVal.forEach(row => {
-            this.calculateVariables(row)
-          })
-        }
+    tableData: {
+      deep: true,
+      handler(newVal) {
+        newVal.forEach(row => {
+          this.calculateVariables(row)
+        })
       }
     }
+  }
 }
 </script>
 
@@ -674,14 +722,14 @@ export default {
   border-radius: 4px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  background-color: transparent; /* 改为透明背景 */
+  background-color: transparent;
 }
 
 .table-wrapper {
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
-  background-color: transparent; /* 改为透明背景 */
+  background-color: transparent;
 }
 
 .table-header {
@@ -710,7 +758,7 @@ export default {
   
   ::v-deep .el-table {
     border: 1px solid #e0e0e0;
-    background-color: transparent !important; /* 改为透明背景 */
+    background-color: transparent !important;
     
     th, td {
       border-right: 1px solid #e0e0e0 !important;
@@ -733,7 +781,7 @@ export default {
     padding: 0;
     height: auto;
     line-height: normal;
-    background-color: rgba(245, 247, 250, 0.7); /* 改为半透明背景 */
+    background-color: rgba(245, 247, 250, 0.7);
     color: white;
     font-weight: bold;
   }
@@ -744,7 +792,7 @@ export default {
     height: 50px;
     line-height: 50px;
     border-bottom: 1px solid #e0e0e0;
-    background-color: transparent; /* 改为透明背景 */
+    background-color: transparent;
   }
 
   ::v-deep .el-table__expanded-cell {
@@ -755,49 +803,6 @@ export default {
   ::v-deep .el-table tr,
   ::v-deep .el-table td {
     background-color: transparent;
-  }
-  
-  /* 多行表头样式 */
-  ::v-deep .multi-header {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    height: 100%;
-    
-    .header-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      
-      &.main-header {
-        font-weight: bold;
-        padding: 5px 0;
-      }
-      
-      &.sub-header {
-        display: flex;
-        border-top: 1px solid #e0e0e0;
-        
-        span {
-          flex: 1;
-          padding: 5px;
-          &:not(:last-child) {
-            border-right: 1px solid #e0e0e0;
-          }
-        }
-      }
-    }
-  }
-  
-  /* 日期选择器样式 */
-  ::v-deep .el-date-editor .el-input__inner {
-    padding-left: 30px;
-  }
-  
-  /* 下拉选择器样式 */
-  ::v-deep .el-select .el-input__inner {
-    padding-right: 30px;
   }
   
   .file-cell {

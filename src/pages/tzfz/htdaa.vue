@@ -54,9 +54,6 @@ export default {
       project_id: 7
     }
   },
-  mounted() {
-    this.loadData()
-  },
   beforeDestroy() {
     this.$refs.tableTemplate.silentsave()
   },

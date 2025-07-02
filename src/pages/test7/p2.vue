@@ -1,395 +1,132 @@
 <template>
   <div class="tables-basic">
+    <b-breadcrumb>
+      <b-breadcrumb-item>车辆管理</b-breadcrumb-item>
+      <b-breadcrumb-item active>充电费用</b-breadcrumb-item>
+    </b-breadcrumb>
+    <h1 class="page-title fw-semi-bold">充电费用</h1>
     <b-row>
       <b-col>
-        <Widget title="<h5>充电费用</h5>" customHeader settings close>
-          <div class="table-header">
-            <b-form-file v-model="file" placeholder="请选择一个Excel文件" style="margin-right: 15px;"></b-form-file>
-            <b-button variant="default" class="mr-3" size="sm" @click="parseExcel" style="width: 110px;height: 35px;">解析Excel</b-button>
-            <b-button variant="default" class="mr-3" size="sm" style="width: 110px;height: 35px;" @click="handleExportTable('DisburseTable')">导出Excel</b-button>
-            <b-button variant="default" class="mr-3" size="sm" @click="addRecord" style="width: 110px;height: 35px;">增加</b-button>
-            <b-button variant="danger" class="mr-3" size="sm" @click="deleteSelectedRecords" style="width: 110px;height: 35px;">删除</b-button>
-            <el-date-picker
-    v-model="selectMonth"
-    type="month"
-    placeholder="选择年月"
-    @change="handleMonthChange"
-    value-format="yyyy-MM"
-    style="margin-right: 15px;"
-  ></el-date-picker>
-  <b-button variant="default" class="mr-3" size="sm" @click="save" style="width: 110px;height: 35px;">保存</b-button>
-          </div>
-          <div id="table">
-            <el-table :data="current" style="width: 100%" id="DisburseTable" @selection-change="handleSelectionChange" @cell-dblclick="handleCellDblclick">
-              <el-table-column type="selection" width="55"></el-table-column>
-              
-              <el-table-column prop="xuhao" label="序号">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.xuhao" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="number" label="车牌号">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.number" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="gendeer" label="所属车队">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.gendeer" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="nation" label="充电信息">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.nation" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="id" label="充电类型">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.id" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="birthday" label="加油型号">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.birthday" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="age" label="充电费用">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.age" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="PoliticalStatus" label="当前里程">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.PoliticalStatus" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="phone2" label="充电地点">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.phone2" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="address" label="备注">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.address" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="time2" label="仪表台照片">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.time2" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="satus" label="票据照片">
-                <template slot-scope="scope">
-                  <el-input v-model="scope.row.satus" class="white-input"></el-input>
-                </template>
-              </el-table-column>
-              
-            </el-table>
-          </div>
-          <div class="table-footer">
-            <b-pagination v-model="currentPage" :total-rows="rows" size="lg"></b-pagination>
-          </div>
+        <Widget title="<h5>充电<span class='fw-semi-bold'>费用</span></h5>" customHeader settings close>
+          <TableTemplate
+            ref="tableTemplate"
+            :tableData="chargingData"
+            :columns="tableColumns"
+            :formFields="formFields"
+            :storageKey="'charging_fees'"
+            :showExcelHandler="true"
+            :customFilter1="filterByMonth"
+            @update:tableData="updateTableData"
+          >
+            <template v-slot:custom-filter1>
+              <el-date-picker
+                v-model="selectMonth"
+                type="month"
+                placeholder="选择年月"
+                @change="handleMonthChange"
+                value-format="yyyy-MM"
+                style="margin-right: 15px;"
+              ></el-date-picker>
+            </template>
+          </TableTemplate>
         </Widget>
       </b-col>
     </b-row>
-    <el-dialog title="修改值" :visible.sync="dialogVisible1" width="30%" @close="dialogVisible1 = false">
-      <el-input v-model="editingValue" placeholder="请输入新值" class="white-input"></el-input>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible1 = false">取 消</el-button>
-        <el-button type="primary" @click="updateValue">确 定</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
-
 <script>
-import Widget from '@/components/Widget/Widget';
-import Sparklines from '../../components/Sparklines/Sparklines';
-import * as XLSX from 'xlsx/xlsx.mjs';
-import axios from '@/utils/axios.js';
-import { new_export_excel } from '@/utils/newexportExcel.js';
+import Widget from '@/components/Widget/Widget'
+import TableTemplate from '@/components/Template/xlsxTable'
+import axios from '@/utils/axios.js'
 
 export default {
-  name: 'p2',
-  components: { Widget, Sparklines },
+  name: 'ChargingFees',
+  components: { Widget, TableTemplate },
   data() {
     return {
-      dialogVisible1: false,
-      editingRow: null, // 当前编辑的行数据
-      editingValue: '', // 输入框中的值
-      editingcolumn: null,
-      file: null,
-      currentPage: 1,
-      tableData: [],
-      multipleSelection: [], // 添加此行
-      selectMonth: null,  // 用于存储用户选择的月份
-      path: '',  // 用于存储生成的路径信息
-    };
-  },
-  // mounted() {
-  //   axios.get('/api/data/p2').then(response => {
-  //     console.log('Fetched JSON:', response.data);
-  //     this.tableData = response.data;
-  //   }).catch(error => {
-  //     console.error('Error fetching JSON:', error);
-  //   });
-  // },
-  // beforeDestroy() {
-  //   axios.post('/api/save/p2', this.tableData, {
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then(response => {
-  //       console.log('上传成功');
-  //     })
-  //     .catch(error => {
-  //       console.error('出错：', error);
-  //     });
-  // },
-  computed: {
-    current() {
-      const start = (this.currentPage - 1) * 20;
-      const end = start + 20;
-      console.log(this.tableData.slice(start, end));
-      return this.tableData.slice(start, end);
-    },
-    rows() {
-      return this.tableData.length;
-    },
-  },
-  methods: {
-    handleSelectionChange(val) {
-      this.multipleSelection = val;
-    },
-    handleCellDblclick(row, column, cell, event) {
-      this.editingRow = row.xuhao; // 保存当前编辑的行数据
-      this.editingcolumn = column.property;
-      this.editingValue = row[column.property]; // 设置输入框的初始值为当前单元格的值
-      this.dialogVisible1 = true; // 显示对话框
-    },
-    isNumeric(str) {
-      return !isNaN(parseFloat(str)) && isFinite(str);
-    },
-    updateValue() {
-      if (this.editingRow && this.editingValue !== this.editingRow.value) {
-        if (!this.isNumeric(this.editingValue)) {
-          this.tableData[this.editingRow - 1][this.editingcolumn] = this.editingValue;
-        } else {
-          this.tableData[this.editingRow - 1][this.editingcolumn] = Number(this.editingValue);
-        }
-      }
-      this.dialogVisible1 = false; // 关闭对话框
-    },
-    handleExportTable(table_id) {
-      this.$nextTick(function () {
-        new_export_excel(table_id);
-      });
-    },
-    parsePrice(price) {
-      if (price === undefined) {
-        return price;
-      } else {
-        price = Number(price);
-        const priceStr = price.toFixed(2);
-        const formattedPrice = priceStr.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return formattedPrice;
-      }
-    },
-    handlePictureChange(event, item) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          item.picture = e.target.result; // 设置图片预览
-          item.isEditing = false; // 完成上传后关闭编辑状态
-        };
-        reader.readAsDataURL(file);
-      }
-    },
-    toggleEditing(item) {
-      console.log(item);
-      item.isEditing = true;
-    },
-    parseExcel() {
-      if (this.file) {
-        let that = this;
-        that.tableData = [];
-        const reader = new FileReader();
-        reader.readAsArrayBuffer(this.file);
-        reader.onload = function (e) {
-          const workbook = XLSX.read(e.target.result, { type: 'binary' });
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          const title = [
-            "number", "gendeer", "nation", "id", "birthday", "age", "PoliticalStatus", "phone2", "address", "time2", "satus"
-          ];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          for (let i = 2; i < jsonData.length; i++) {
-            let obj = {};
-            if (jsonData[i].length == 0) {
-              continue;
-            }
-            for (let j = 0; j < jsonData[i].length; j++) {
-              if (typeof jsonData[i][j + 1] === 'number') {
-                obj[title[j]] = jsonData[i][j + 1].toFixed(2);
-              } else {
-                obj[title[j]] = jsonData[i][j + 1];
-              }
-            }
-            obj.xuhao = i - 1;
-            obj["isEditing"] = false;
-            that.tableData.push(obj);
-          }
-        };
-      }
-    },
-    addRecord() {
-      this.tableData.push({
-        xuhao: "",
-        number: "",
-        gendeer: "",
-        nation: "",
-        id: "",
-        birthday: "",
-        age: "",
-        PoliticalStatus: "",
-        phone2: "",
-        address: "",
-        time2: "",
-        satus: "",
-        selected: false,
-        isEditing: false
-      });
-    },
-    deleteSelectedRecords() {
-      this.tableData = this.tableData.filter(item => !this.multipleSelection.includes(item));
-      this.multipleSelection = [];
-    },
-    handleMonthChange() {
-      if (this.selectMonth) {
-        const [year, month] = this.selectMonth.split('-');
-        this.path = `${year}-${month}`;
-        this.fetchDataForMonth();  // 调用获取数据的方法
-      }
-    },
-    fetchDataForMonth() {
-      axios.post('/api/data/p2', { iddd: this.path }, {
-        headers: { 'Content-Type': 'application/json' },
-      }).then(response => {
-        this.tableData = response.data;
-        console.log(this.tableData)
-        // console.log(this.tableData.length)
-        if(this.tableData.length==undefined) this.tableData=[{}]        // if (!this.tableData.length) {
-        //   const daysInMonth = new Date(this.selectMonth.split('-')[0], this.selectMonth.split('-')[1], 0).getDate();
-        //   for (let i = 1; i <= daysInMonth; i++) {
-        //     this.tableData.push({
-        //       xuhao: i,
-        //       // 初始化其他需要的字段
-        //       number: '',
-        //       gendeer: '',
-        //       nation: '',
-        //       id: '',
-        //       birthday: '',
-        //       age: '',
-        //       PoliticalStatus: '',
-        //       phone2: '',
-        //       address: '',
-        //       time2: '',
-        //       satus: '',
-        //     });
-        //   }
-        // }
-      }).catch(error => {
-        console.error('Error fetching data:', error);
-      });
-    },
-    save() {
-      axios.post('/api/save/p2', [this.tableData, this.path], {
-        headers: {
-          'Content-Type': 'application/json',
+      chargingData: [],
+      selectMonth: null,
+      path: '',
+      tableColumns: [
+        { prop: 'xuhao', label: '序号', width: 100, type: 'number' },
+        { prop: 'number', label: '车牌号', width: 150 },
+        { prop: 'gendeer', label: '所属车队', width: 150 },
+        { prop: 'nation', label: '充电信息', width: 180 },
+        { prop: 'id', label: '充电类型', width: 150 },
+        { prop: 'birthday', label: '加油型号', width: 150 },
+        { 
+          prop: 'age', 
+          label: '充电费用', 
+          width: 150,
+          type: 'number'
         },
-      })
-      .then(response => {
-        console.log('数据保存成功');
-        this.$message.success('数据保存成功');
-      })
-      .catch(error => {
-        console.error('保存数据时出错：', error);
-        this.$message.error('保存数据失败，请重试');
-      });
+        { 
+          prop: 'PoliticalStatus', 
+          label: '当前里程', 
+          width: 150,
+          type: 'number'
+        },
+        { prop: 'phone2', label: '充电地点', width: 180 },
+        { prop: 'address', label: '备注', width: 200 },
+        { 
+          prop: 'time2', 
+          label: '仪表台照片', 
+          width: 180,
+          type: 'file'
+        },
+        { 
+          prop: 'satus', 
+          label: '票据照片', 
+          width: 180,
+          type: 'file'
+        }
+      ],
+      formFields: {
+        xuhao: '',
+        number: '',
+        gendeer: '',
+        nation: '',
+        id: '',
+        birthday: '',
+        age: '',
+        PoliticalStatus: '',
+        phone2: '',
+        address: '',
+        time2: null,
+        satus: null
+      }
+    }
+  },
+
+  methods: {
+    updateTableData(newData) {
+      this.chargingData = newData
     },
+    
+    filterByMonth(item) {
+      if (!this.selectMonth) return true
+      
+      const itemDate = item.time2
+      if (!itemDate) return false
+      
+      // 处理不同日期格式
+      const dateObj = new Date(itemDate)
+      const year = dateObj.getFullYear()
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+      const itemYearMonth = `${year}-${month}`
+      
+      return itemYearMonth === this.selectMonth
+    },
+    
+    handleMonthChange() {
+      console.log('当前筛选月份:', this.selectMonth)
+    },
+    
+    clearMonthFilter() {
+      this.selectMonth = null
+    },
+    
   }
-};
+}
 </script>
-
-
-<style lang="scss" scoped>
-@import '../../styles/app';
-
-.table-header {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 15px;
-}
-
-.table-footer {
-  margin-top: 30px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#table {
-  ::v-deep .cell {
-    color: #01010d;
-  }
-
-  ::v-deep .el-table__header th {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-
-  ::v-deep .el-table__body tr,
-  ::v-deep .el-table__body td {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-
-  ::v-deep .el-table {
-    background-color: transparent !important;
-    color: #9f9fad !important;
-  }
-
-  ::v-deep .el-table__expanded-cell {
-    background-color: transparent !important;
-  }
-
-  ::v-deep .el-table th,
-  ::v-deep .el-table tr,
-  ::v-deep .el-table td {
-    background-color: transparent;
-  }
-
-  .white-input .el-input__inner {
-    background-color: white !important; 
-    color: #01010d !important;
-  }
-}
-</style>
-
