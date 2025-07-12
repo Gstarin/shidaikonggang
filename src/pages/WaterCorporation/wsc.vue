@@ -4,68 +4,36 @@
       <b-breadcrumb-item>青清水务</b-breadcrumb-item>
       <b-breadcrumb-item active>污水厂成本</b-breadcrumb-item>
     </b-breadcrumb>
+
     <b-row>
       <b-col>
-        <Widget title="<h5>污水厂成本</h5>" customHeader settings close>
-          <div class="table-header">
-            <b-form-file v-model="file" accept=".xlsx, .xls" placeholder="请选择一个Excel文件" class="mr-3" style="width: 40%;"></b-form-file>
-            <b-button variant="primary" @click="parseExcel">上传并解析</b-button>
-            <b-button variant="default" @click="addRecord">增加</b-button>
-            <b-button variant="danger" @click="deleteSelectedRecords">删除</b-button>
-            <b-button variant="default" @click="handleExportTable('DisburseTable1')">下载模板</b-button>
-            <el-date-picker v-model="selectMonth" type="month" placeholder="选择年月" @change="handle" value-format="yyyy-MM" style="margin-right: 15px"></el-date-picker>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-bordered">
-              <thead id="DisburseTable1">
-                <tr>
-                  <th><b-form-checkbox v-model="selectAll" @change="selectAllRecords"></b-form-checkbox></th>
-                  <th>月度</th>
-                  <th>经营药剂费</th>
-                  <th>电费</th>
-                  <th>实验药剂费</th>
-                  <th>设备维修费</th>
-                  <th>人员工资</th>
-                  <th>食堂费用</th>
-                  <th>合规性费用</th>
-                  <th>水费</th>
-                  <th>固废处理费</th>
-                  <th>其他费用</th>
-                  <th>合计</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, index) in items" :key="index" v-if="row.index==selectMonth||selectMonth==null">
-                  <td><b-form-checkbox v-model="row.selected"></b-form-checkbox></td>
-                  <td>
-                    <el-date-picker v-model="row.index" type="month" placeholder="选择年月" @change="handle" value-format="yyyy-MM" style="margin-right: 15px"></el-date-picker>
-                  </td>
-                  <td><b-form-input v-model="row.materialName" /></td>
-                  <td><b-form-input v-model="row.specModel" /></td>
-                  <td><b-form-input v-model="row.unit" /></td>
-                  <td><b-form-input v-model="row.requestQuantity" /></td>
-                  <td><b-form-input v-model="row.receivedQuantity" /></td>
-                  <td><b-form-input v-model="row.stockQuantity" /></td>
-                  <td><b-form-input v-model="row.stockTime" /></td>
-                  <td><b-form-input v-model="row.jine" /></td>
-                  <td><b-form-input v-model="row.note" /></td>
-                  <td><b-button variant="default" @click="edit(row.unit)">查看</b-button></td>
-                  <td><span>{{((Number(row.stockQuantity)||0)+(Number(row.stockTime)||0)+(Number(row.jine)||0)+(Number(row.note)||0)+(Number(row.materialName)||0)+(Number(row.specModel)||0)+(Number(row.unit)||0)+(Number(row.requestQuantity)||0)+(Number(row.receivedQuantity)||0)).toFixed(2)}}</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <Widget title="污水厂成本" customHeader settings close>
+          <xlsxTable
+            v-model:tableData="items"
+            :columns="columns"
+            :formFields="formFields"
+            apiEndpoint="/api/save/wsc"
+            storageKey="wsc"
+            @row-click="handleEdit"
+          >
+            <template #custom-filter1>
+              <el-date-picker
+                v-model="selectMonth"
+                type="month"
+                placeholder="选择年月"
+                value-format="yyyy-MM"
+                style="margin-right: 15px"
+              />
+            </template>
+          </xlsxTable>
 
-          <!-- 添加折线图按钮 -->
           <div class="table-footer">
             <b-button variant="success" @click="generateChart">生成折线图</b-button>
           </div>
 
-          <!-- 添加折线图的 canvas -->
           <div v-if="chartVisible" style="margin-top: 20px;">
             <canvas id="costChart"></canvas>
           </div>
-          
         </Widget>
       </b-col>
     </b-row>
@@ -73,305 +41,123 @@
 </template>
 
 <script>
-import Vue from 'vue';
-import Widget from '@/components/Widget/Widget';
-import * as XLSX from 'xlsx/xlsx.mjs';
-import axios from '@/utils/axios.js';
-import { export_excel } from '@/utils/exportExcel.js';
-import { Chart } from 'chart.js';
+import Widget from '@/components/Widget/Widget'
+import xlsxTable from '@/components/Template/xlsxTable'
+import { Chart } from 'chart.js'
 
 export default {
   name: 'wsc',
-  components: { Widget },
+  components: { Widget, xlsxTable },
   data() {
     return {
-      selectMonth: null,
-      file: null,
       items: [],
-      selectAll: false,
-      chartVisible: false,  // 控制图表的显示
-      chart: null,          // Chart.js 的实例
-    };
-  },
-  beforeDestroy() {
-    axios.post('/api/save/wsc', this.items, {
-      headers: {
-        'Content-Type': 'application/json'
+      chartVisible: false,
+      chart: null,
+      selectMonth: null,
+      columns: [
+        { prop: 'index', label: '月份', type: 'date', width: 120 },
+        { prop: 'materialName', label: '经营药剂费', type: 'number' },
+        { prop: 'specModel', label: '电费', type: 'number' },
+        { prop: 'unit', label: '实验药剂费', type: 'number' },
+        { prop: 'requestQuantity', label: '设备维修费', type: 'number' },
+        { prop: 'receivedQuantity', label: '人员工资', type: 'number' },
+        { prop: 'stockQuantity', label: '食堂费用', type: 'number' },
+        { prop: 'stockTime', label: '合规性费用', type: 'number' },
+        { prop: 'jine', label: '水费', type: 'number' },
+        { prop: 'note', label: '固废处理费', type: 'number' },
+        {
+          prop: 'heji',
+          label: '合计',
+          type: 'number',
+          compute: (row) =>
+            (
+              Number(row.materialName || 0) +
+              Number(row.specModel || 0) +
+              Number(row.unit || 0) +
+              Number(row.requestQuantity || 0) +
+              Number(row.receivedQuantity || 0) +
+              Number(row.stockQuantity || 0) +
+              Number(row.stockTime || 0) +
+              Number(row.jine || 0) +
+              Number(row.note || 0)
+            ).toFixed(2)
+        }
+      ],
+      formFields: {
+        index: '',
+        materialName: '',
+        specModel: '',
+        unit: '',
+        requestQuantity: '',
+        receivedQuantity: '',
+        stockQuantity: '',
+        stockTime: '',
+        jine: '',
+        note: ''
       }
-    }).then(response => {
-      console.log('记录上传成功:', response.data);
-      this.$bvToast.toast('数据保存成功', {
-        title: '成功',
-        variant: 'success',
-        solid: true
-      });
-    }).catch(error => {
-      console.error('记录上传出错:', error);
-      this.$bvToast.toast('数据保存失败，请重试', {
-        title: '错误',
-        variant: 'danger',
-        solid: true
-      });
-    });
-  },
-  mounted() {
-    axios.get('/api/data/wsc').then(response => {
-      this.items = response.data || [];
-      if(this.items.length==undefined) this.items=[];
-    }).catch(error => {
-      console.error('Error fetching JSON:', error);
-      this.items = [];
-      this.$bvToast.toast('数据加载失败，请刷新页面重试', {
-        title: '错误',
-        variant: 'warning',
-        solid: true
-      });
-    });
+    }
   },
   methods: {
-    handleExportTable(table_id) {
-      this.$nextTick(function () {
-        export_excel(table_id);
-      });
-    },
-    edit(name) {
+    handleEdit(row) {
       this.$router.push({
-        path: "/app/WaterCorporation/sc2?name=" + name,
-        query: {  
-          name: name  
-        }  
-      });
+        path: '/app/WaterCorporation/sc2',
+        query: { name: row.unit }
+      })
     },
-    parseExcel() {
-      if (this.file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-          // 解析Excel数据
-          const parsedData = jsonData.slice(1).map(row => ({
-            index: row[0],
-            materialName: row[1],
-            specModel: row[2],
-            unit: row[3],
-            requestQuantity: row[4],
-            receivedQuantity: row[5],
-            stockQuantity: row[6],
-            stockTime: row[7],
-            jine: row[8],
-            note: row[9],
-            qita: row[10],
-            heji: row[11],
-            selected: false
-          }));
-
-          this.items = parsedData;
-        };
-        reader.readAsArrayBuffer(this.file);
+    generateChart() {
+      const selected = this.items.filter(i => !this.selectMonth || i.index === this.selectMonth)
+      if (selected.length === 0) {
+        this.$bvToast.toast('请选择数据生成图表', {
+          title: '提示',
+          variant: 'warning',
+          solid: true
+        })
+        return
       }
-    },
-    addRecord() {
-      this.items.push({
-        time: '',
-        in_stock: '',
-        out_stock: '',
-        remaining: '',
-        note: '',
-        selected: false
-      });
-    },
-    deleteSelectedRecords() {
-      this.items = this.items.filter(item => !item.selected);
-    },
-    selectAllRecords() {
-      this.items.forEach(item => {
-        item.selected = this.selectAll;
-      });
-    },
-generateChart() {
-  const selectedItems = this.items.filter(item => item.selected);
 
-  if (selectedItems.length === 0) {
-    this.$bvToast.toast('请选择至少一个月份来生成图表', {
-      title: '提示',
-      variant: 'warning',
-      solid: true
-    });
-    return;
-  }
+      const get = key => selected.map(i => parseFloat(i[key]) || 0)
+      const labels = selected.map(i => i.index)
 
-  this.chartVisible = true;
+      const datasets = [
+        { label: '经营药剂费', key: 'materialName', color: 'rgba(75, 192, 192, 1)' },
+        { label: '电费', key: 'specModel', color: 'rgba(192, 75, 75, 1)' },
+        { label: '实验药剂费', key: 'unit', color: 'rgba(75, 75, 192, 1)' },
+        { label: '设备维修费', key: 'requestQuantity', color: 'rgba(75, 192, 75, 1)' },
+        { label: '人员工资', key: 'receivedQuantity', color: 'rgba(192, 192, 75, 1)' },
+        { label: '食堂费用', key: 'stockQuantity', color: 'rgba(75, 75, 75, 1)' },
+        { label: '合规性费用', key: 'stockTime', color: 'rgba(192, 75, 192, 1)' },
+        { label: '水费', key: 'jine', color: 'rgba(75, 192, 192, 1)' },
+        { label: '固废处理费', key: 'note', color: 'rgba(192, 75, 75, 1)' }
+      ].map(ds => ({
+        label: ds.label,
+        data: get(ds.key),
+        borderColor: ds.color,
+        backgroundColor: ds.color.replace('1)', '0.2)'),
+        fill: false
+      }))
 
-  this.$nextTick(() => {
-    const ctx = document.getElementById('costChart').getContext('2d');
-
-    // 创建每种成本的数据集
-    const datasets = [
-      {
-        label: '经营药剂费',
-        data: selectedItems.map(item => parseFloat(item.materialName) || 0),
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        fill: false,
-      },
-      {
-        label: '电费',
-        data: selectedItems.map(item => parseFloat(item.specModel) || 0),
-        borderColor: 'rgba(192, 75, 75, 1)',
-        backgroundColor: 'rgba(192, 75, 75, 0.2)',
-        fill: false,
-      },
-      {
-        label: '实验药剂费',
-        data: selectedItems.map(item => parseFloat(item.unit) || 0),
-        borderColor: 'rgba(75, 75, 192, 1)',
-        backgroundColor: 'rgba(75, 75, 192, 0.2)',
-        fill: false,
-      },
-      {
-        label: '设备维修费',
-        data: selectedItems.map(item => parseFloat(item.requestQuantity) || 0),
-        borderColor: 'rgba(75, 192, 75, 1)',
-        backgroundColor: 'rgba(75, 192, 75, 0.2)',
-        fill: false,
-      },
-      {
-        label: '人员工资',
-        data: selectedItems.map(item => parseFloat(item.receivedQuantity) || 0),
-        borderColor: 'rgba(192, 192, 75, 1)',
-        backgroundColor: 'rgba(192, 192, 75, 0.2)',
-        fill: false,
-      },
-      {
-        label: '食堂费用',
-        data: selectedItems.map(item => parseFloat(item.stockQuantity) || 0),
-        borderColor: 'rgba(75, 75, 75, 1)',
-        backgroundColor: 'rgba(75, 75, 75, 0.2)',
-        fill: false,
-      },
-      {
-        label: '合规性费用',
-        data: selectedItems.map(item => parseFloat(item.stockTime) || 0),
-        borderColor: 'rgba(192, 75, 192, 1)',
-        backgroundColor: 'rgba(192, 75, 192, 0.2)',
-        fill: false,
-      },
-      {
-        label: '水费',
-        data: selectedItems.map(item => parseFloat(item.jine) || 0),
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        fill: false,
-      },
-      {
-        label: '固废处理费',
-        data: selectedItems.map(item => parseFloat(item.note) || 0),
-        borderColor: 'rgba(192, 75, 75, 1)',
-        backgroundColor: 'rgba(192, 75, 75, 0.2)',
-        fill: false,
-      },
-      // {
-      //   label: '其他费用',
-      //   data: selectedItems.map(item => parseFloat(item.qita) || 0),
-      //   borderColor: 'rgba(75, 75, 192, 1)',
-      //   backgroundColor: 'rgba(75, 75, 192, 0.2)',
-      //   fill: false,
-      // }
-    ];
-
-    if (this.chart) {
-      this.chart.destroy(); // 如果已有图表实例，销毁它以避免重复
-    }
-
-    this.chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: selectedItems.map(item => item.index),
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: '月份'
+      this.chartVisible = true
+      this.$nextTick(() => {
+        const ctx = document.getElementById('costChart').getContext('2d')
+        if (this.chart) this.chart.destroy()
+        this.chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            scales: {
+              x: { title: { display: true, text: '月份' } },
+              y: { title: { display: true, text: '成本' }, beginAtZero: true }
             }
-          },
-          y: {
-            title: {
-              display: true,
-              text: '成本'
-            },
-            beginAtZero: true
           }
-        }
-      }
-    });
-  });
-}
-
+        })
+      })
+    }
   }
-};
+}
 </script>
-<style lang="scss" scoped>
-@import '../../styles/app';
-.form-control {  
-  background-color: white !important; /* 使用 !important 确保覆盖其他样式 */  
-}
-.table-header {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 15px;
-}
 
-.table-footer {
-  margin-top: 30px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#table {
-  ::v-deep .cell {
-    color: #9f9fad;
-  }
-  ::v-deep .el-table__header th {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-  ::v-deep .el-table__body tr,
-  ::v-deep .el-table__body td {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-  ::v-deep .el-table {
-    background-color: transparent !important;
-    color: #9f9fad !important;
-  }
-  ::v-deep .el-table__expanded-cell {
-    background-color: transparent !important;
-  }
-  ::v-deep .el-table th,
-  ::v-deep .el-table tr,
-  ::v-deep .el-table td {
-    background-color: transparent;
-  }
-}
-
-.clickable {
-  cursor: pointer;
-  color: #9f9fad;
-  text-decoration: underline;
-}
-
+<style scoped>
 #costChart {
   max-width: 100%;
   height: 400px;

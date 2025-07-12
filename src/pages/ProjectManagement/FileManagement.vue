@@ -1,201 +1,167 @@
 <template>
-    <div id="app">
-        <b-breadcrumb>
-            <b-breadcrumb-item>项目管理</b-breadcrumb-item>
-            <b-breadcrumb-item active>文件管理</b-breadcrumb-item>
-        </b-breadcrumb>
-        <!-- <h1 class="page-title fw-semi-bold">文件管理</h1> -->
-        <b-row>
-            <b-col>
-                <Widget title="<h5>文件管理</h5>" customHeader settings close>
-                    <TableTemplate ref="tableTemplate" :tableData="files" :columns="columns" :formFields="{}"
-                        :storageKey="'fileManager'">
-                        <template v-slot:custom-filter3>
-                            <el-upload class="upload-demo" :action="uploadUrl" :http-request="upload"
-                                :on-success="handleUploadSuccess" :on-error="handleUploadError">
-                                <el-button type="primary">上传文件</el-button>
-                            </el-upload>
-                        </template>
-                    </TableTemplate>
+  <div class="tables-basic">
+    <b-breadcrumb>
+      <b-breadcrumb-item>项目管理</b-breadcrumb-item>
+      <b-breadcrumb-item active>文件管理</b-breadcrumb-item>
+    </b-breadcrumb>
 
-                </Widget>
-            </b-col>
-        </b-row>
-    </div>
+    <b-row>
+      <b-col>
+        <Widget title="<h5>文件管理</h5>" customHeader settings close>
+          <el-row>
+            <el-col :span="6">
+              <!-- 📁 文件夹树 -->
+              <div class="folder-actions" style="display: flex; margin-bottom: 10px;">
+                <el-input v-model="newFolderName" placeholder="新建文件夹" style="margin-right: 10px;" />
+                <el-button type="primary" @click="createFolder">新建</el-button>
+              </div>
+
+              <el-tree :data="folderTree" :props="defaultProps" node-key="name" @node-click="handleFolderClick">
+                <span slot-scope="{ node, data }">
+                  <i class="el-icon-folder"></i>
+                  <span>{{ data.name }}</span>
+                  <el-button
+                    v-if="data.name !== 'root'"
+                    type="text"
+                    size="mini"
+                    style="margin-left: 5rem;"
+                    @click.stop="deleteFolder(node, data)"
+                  >删除</el-button>
+                </span>
+              </el-tree>
+            </el-col>
+
+            <el-col :span="17" style="margin-left: 2%;">
+              <div v-if="currentFolder" style="margin-bottom: 10px;">
+                <el-upload
+                  :http-request="upload"
+                  :show-file-list="false"
+                >
+                  <el-button type="primary">上传文件</el-button>
+                </el-upload>
+              </div>
+
+              <xlsx-table
+                v-if="currentFolder"
+                :columns="columns"
+                :table-data.sync="files"
+                :form-fields="{}"
+                :show-form="false"
+                :show-delete="false"
+                :show-add="false"
+                :clickable-columns="[]"
+              >
+                <template v-slot:action="scope">
+                  <el-button size="mini" type="primary" @click="downloadFile(scope.row)">下载</el-button>
+                  <el-button size="mini" type="danger" @click="deleteFile(scope.row)">删除</el-button>
+                </template>
+              </xlsx-table>
+
+              <el-alert v-else type="info" title="请选择一个文件夹以查看文件内容" show-icon />
+            </el-col>
+          </el-row>
+        </Widget>
+      </b-col>
+    </b-row>
+  </div>
 </template>
 
 <script>
+import Widget from '@/components/Widget/Widget.vue'
+import XlsxTable from '@/components/Template/xlsxTable.vue'
 import axios from '@/utils/axios.js'
-import Widget from '@/components/Widget/Widget';
-import TableTemplate from '@/components/Template/xlsxTable'
 
 export default {
-    name: 'App',
-    components: { Widget, TableTemplate },
-    data() {
-        return {
-            newFolderName: '',
-            folderTree: [
-                { name: 'root', children: [], files: [] }
-            ],
-            defaultProps: {
-                children: 'children',
-                label: 'name'
-            },
-            currentFolder: null,
-            files: [],
-            uploadUrl: '/api/upload',
-            columns: [
-                { prop: 'name', label: '文件名' },
-                {
-                    label: '操作',
-                    render: (row) => `
-      <el-button type="primary" size="mini" onclick="window.__downloadFile('${row.name}')">下载</el-button>
-      <el-button type="danger" size="mini" onclick="window.__deleteFile('${row.name}')">删除</el-button>
-    `
-                }
-            ],
-
-        }
-    },
-    mounted() {
-        axios.get('/api/data/tree').then(response => {
-            // console.log('Fetched JSON:', response.data);
-            this.folderTree = response.data
-        }).catch(error => {
-            console.error('Error fetching JSON:', error);
-        });
-        // window.__downloadFile = (fileName) => {
-        //     this.downloadFile({ name: fileName });
-        // };
-        // window.__deleteFile = (fileName) => {
-        //     const file = this.files.find(f => f.name === fileName);
-        //     if (file) this.deleteFile(file);
-        // };
-    },
-    beforeDestroy() {
-        axios.post('/api/save/tree', this.folderTree, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then(response => {
-                console.log('上传成功');
-            })
-            .catch(error => {
-                console.error('出错：', error);
-            });
-    },
-    methods: {
-        upload(res) {
-            console.log(res)
-            var that = this;
-            const formData = new FormData();
-            formData.append("file", res.file);
-            // formData.append("projectName", that.project_id);
-            formData.append("fileName", res.file.name);
-            axios
-                .post("/api/save/file", formData)
-                .then((response) => {
-                    that.$message({
-                        message: "文件上传成功",
-                        type: "success",
-                    });
-                    console.log(response)
-                    that.currentFolder.files.push({ name: response.data })
-                    that.files = that.currentFolder.files
-                })
-                .catch((error) => {
-                    console.error("上传文件时出错：", error);
-                });
-        },
-        // gpt
-        // upload(res) {
-        //     const formData = new FormData();
-        //     formData.append("file", res.file);
-        //     formData.append("fileName", res.file.name);
-        //     axios.post("/api/save/file", formData).then((response) => {
-        //         this.$message.success("上传成功");
-        //         const uploadedName = response.data;
-        //         this.currentFolder.files.push({ name: uploadedName });
-        //         this.files = this.currentFolder.files;
-        //     }).catch(() => {
-        //         this.$message.error("上传失败");
-        //     });
-        // },
-        createFolder() {
-            if (this.newFolderName.trim()) {
-                this.currentFolder.children.push({ name: this.newFolderName, children: [], files: [] });
-                this.newFolderName = '';
-            }
-        },
-        deleteFolder(node, data) {
-            this.$confirm(`确定删除文件夹 "${data.name}"?`, '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-            }).then(() => {
-                if (data.name === "root") {
-                    this.$message.error('无法删除根目录！');
-                } else {
-                    const parent = node.parent;
-                    const children = parent.data.children || parent.data;
-                    const index = children.findIndex(item => item.name === data.name);
-                    children.splice(index, 1);
-                }
-            }).catch(() => {
-                // 取消删除
-            });
-        },
-        handleFolderClick(data) {
-            this.currentFolder = data;
-            this.files = data.files;
-        },
-        handleUploadSuccess(response, file, fileList) {
-            this.$message.success('上传成功');
-            this.currentFolder.files.push({ name: file.name });
-        },
-        handleUploadError(err, file, fileList) {
-            this.$message.error('上传失败');
-        },
-        downloadFile(file) {
-            // 实现下载文件的逻辑
-            console.log('下载文件: ', file.name);
-            var that = this;
-            axios.get(
-                `/api/data/file?fileName=${file.name}`
-            ).then((response) => {
-                const url = "http://8.130.106.134:5000/" + response.data;
-                window.open(url, "_blank");
-            }).catch((error) => {
-                that.$message({
-                    message: "文件下载失败",
-                    type: "error",
-                });
-            });
-        },
-        deleteFile(file) {
-            this.$confirm(`确定删除文件 "${file.name}"?`, '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-            }).then(() => {
-                const index = this.files.findIndex(item => item.name === file.name);
-                this.files.splice(index, 1);
-                this.$message.success('删除成功');
-            }).catch(() => {
-                // 取消删除
-            });
-        }
+  name: 'FileManager',
+  components: { Widget, XlsxTable },
+  data() {
+    return {
+      newFolderName: '',
+      folderTree: [{ name: 'root', children: [], files: [] }],
+      defaultProps: { children: 'children', label: 'name' },
+      currentFolder: null,
+      files: [],
+      columns: [
+        { prop: 'name', label: '文件名' }
+      ]
     }
+  },
+  mounted() {
+    axios.get('/api/data/tree').then(res => {
+      this.folderTree = res.data || [{ name: 'root', children: [], files: [] }]
+    })
+  },
+  beforeDestroy() {
+    axios.post('/api/save/tree', this.folderTree, {
+      headers: { 'Content-Type': 'application/json' }
+    }).then(() => {
+      console.log('结构保存成功')
+    })
+  },
+  methods: {
+    createFolder() {
+      if (!this.currentFolder) {
+        this.$message.warning('请先选择一个父目录')
+        return
+      }
+      if (this.newFolderName.trim()) {
+        this.currentFolder.children.push({
+          name: this.newFolderName.trim(),
+          children: [],
+          files: []
+        })
+        this.newFolderName = ''
+      }
+    },
+    deleteFolder(node, data) {
+      this.$confirm(`确定删除文件夹 "${data.name}"?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const parent = node.parent
+        const children = parent.data.children || parent.data
+        const index = children.findIndex(item => item.name === data.name)
+        children.splice(index, 1)
+      })
+    },
+    handleFolderClick(data) {
+      this.currentFolder = data
+      this.files = data.files
+    },
+    upload({ file }) {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileName', file.name)
+      axios.post('/api/save/file', formData)
+        .then(res => {
+          this.currentFolder.files.push({ name: res.data })
+          this.$message.success('上传成功')
+        })
+        .catch(() => {
+          this.$message.error('上传失败')
+        })
+    },
+    downloadFile(file) {
+      axios.get(`/api/data/file?fileName=${file.name}`)
+        .then(res => {
+          window.open("http://8.130.106.134:5000/" + res.data, "_blank")
+        })
+        .catch(() => {
+          this.$message.error('下载失败')
+        })
+    },
+    deleteFile(file) {
+      this.$confirm(`确定删除文件 "${file.name}"?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const idx = this.files.findIndex(f => f.name === file.name)
+        this.files.splice(idx, 1)
+        this.$message.success('删除成功')
+      })
+    }
+  }
 }
 </script>
-
-<style lang="scss" scoped>
-.el-header {
-    background-color: #409EFF;
-    color: #fff;
-    line-height: 60px;
-    text-align: center;
-}
-</style>
