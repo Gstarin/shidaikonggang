@@ -308,11 +308,11 @@ export default {
       return Array.from(punishments).sort();
     }
   },
-  created() {
-    this.loadData();
-  },
+
   methods: {
     calculateAges() {
+      
+      console.log(this.tableData);
       this.tableData.forEach(item => {
         if (item.id_number) {
           const birthYear = parseInt(String(item.id_number).substring(6, 10), 10);

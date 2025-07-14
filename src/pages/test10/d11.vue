@@ -17,8 +17,6 @@
             :showExcelHandler="true"
             :customFilter1="filterByDateRange"
             @update:tableData="updateTableData"
-            @save-success="handleSaveSuccess"
-            @load-success="handleLoadSuccess"
           >
             <!-- 自定义筛选插槽 - 日期范围筛选 -->
             <template v-slot:custom-filter1>
@@ -116,9 +114,6 @@ export default {
       }
     }
   },
-  mounted() {
-    this.loadInitialData()
-  },
   methods: {
     updateTableData(newData) {
       // 更新ID
@@ -139,34 +134,6 @@ export default {
       
       return itemDate >= startTime && itemDate <= endTime
     },
-    
-    handleSaveSuccess() {
-      this.$message.success('数据保存成功')
-    },
-    
-    handleLoadSuccess() {
-      this.$message.success('数据加载成功')
-    },
-    
-    loadInitialData() {
-      axios.get('/api/data/d11').then(response => {
-        console.log('Fetched JSON:', response.data)
-        this.tableData = response.data.map((item, index) => ({
-          ...item,
-          id: index + 1
-        }))
-      }).catch(error => {
-        console.error('Error fetching JSON:', error)
-        this.$message.error('加载数据失败')
-      })
-    },
-    
-    // 导出模板方法
-    handleExportTemplate() {
-      this.$nextTick(() => {
-        export_excel('DisburseTable1')
-      })
-    }
   }
 }
 </script>

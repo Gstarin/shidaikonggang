@@ -31,7 +31,7 @@ Vue.use(VueGoogleMaps, {
 
 Vue.component('apexchart', VueApexCharts);
 Vue.mixin(layoutMixin);
-Vue.use(Toasted, {duration: 10000});
+Vue.use(Toasted, {duration: 1000000});
 Vue.use(ElementUI);
 Vue.config.productionTip = false;
 Vue.directive('draggable', draggable)//对话框可移动

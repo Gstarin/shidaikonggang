@@ -142,7 +142,7 @@ export default {
     filterByMonth(item) {
       if (!this.selectMonth) return true
       
-      const itemDate = item.time2
+      const itemDate = item.date
       if (!itemDate) return false
       
       // 处理不同日期格式

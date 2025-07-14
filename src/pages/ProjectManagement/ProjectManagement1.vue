@@ -105,35 +105,7 @@ export default {
             multipleSelection: []
         };
     },
-    mounted() {
-        axios.get('/api/data/zlda').then(response => {
-            // console.log('Fetched JSON:', response.data);
-            this.tableData = response.data
-            // 为每条数据添加id
-            for (let i = 0; i < this.tableData.length; i++) {
-                this.tableData[i].id = i + 1;
-            }
-        }).catch(error => {
-            console.error('Error fetching JSON:', error);
-            // 如果数据不存在，初始化为空数组
-            this.tableData = [];
-        });
-    },
-    beforeDestroy() {
-        if (this.tableData.length > 0) {
-            axios.post('/api/save/zlda', this.tableData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-                .then(response => {
-                    console.log('项目管理数据保存成功');
-                })
-                .catch(error => {
-                    console.error('项目管理数据保存失败：', error);
-                });
-        }
-    },
+
     computed: {
         filteredItems() {
             let temp = [];

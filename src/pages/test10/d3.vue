@@ -51,31 +51,31 @@ export default {
       selectedYearMonth: null,
       // 表格列配置
       tableColumns: [
-        { prop: 'id', label: '序号', width: 55 },
+        { prop: 'id', label: '序号', width: 150 },
         { 
           prop: 'date', 
           label: '日期', 
-          width: 180, 
+          width: 200, 
           type: 'date',
           formatter: this.formatDate
         },
         { 
           prop: 'name', 
           label: '名称', 
-          width: 120,
+          width: 250,
           editable: true
         },
         { 
           prop: 'money', 
           label: '金额', 
-          width: 120,
+          width: 300,
           type: 'number',
           editable: true
         },
         { 
           prop: 'number', 
           label: '票号', 
-          width: 150,
+          width: 300,
           editable: true
         }
       ],

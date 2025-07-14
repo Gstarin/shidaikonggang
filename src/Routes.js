@@ -42,7 +42,7 @@ const moduleConfigs = [
   },
   {
     prefix: 'MunicipalCorporation',
-    components: ['MunicipalCorporation', 'Disburse', 'Income', 'Log', 'total']
+    components: ['Disburse', 'Income','total']
   },
   {
     prefix: 'szgs',
@@ -76,7 +76,17 @@ const specialRoutes = [
   { path: 'typography', name: 'Typography', component: () => import('@/pages/Typography/Typography') },
   { path: 'notifications', name: 'Notifications', component: () => import('@/pages/Notifications/Notifications') },
   { path: 'components/icons', name: 'Icons', component: () => import('@/pages/Icons/Icons') },
-  { path: 'components/charts', name: 'Charts', component: () => import('@/pages/Charts/Charts') }
+  { path: 'components/charts', name: 'Charts', component: () => import('@/pages/Charts/Charts') },
+  { 
+    path: 'MunicipalCorporation/contract-payment/:contractId', 
+    name: 'contract-payment-details', 
+    component: () => import('@/pages/MunicipalCorporation/detail'),
+  },
+  {
+  path: '/expense-contract/:contractId',
+  name: 'expense-contract-details',
+  component: () => import('@/pages/MunicipalCorporation/detail1')
+  }
 ];
 
 // 生成路由
@@ -87,7 +97,7 @@ const generateRoutes = () => {
     config.components.forEach(comp => {
       children.push({
         path: `${config.prefix}/${comp}`,
-        name: comp === 'MunicipalCorporation' ? config.prefix : comp, // 特殊处理同名组件
+        name: comp,
         component: () => import(`@/pages/${config.prefix}/${comp}`)
       });
     });

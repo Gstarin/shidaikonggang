@@ -1,772 +1,388 @@
 <template>
   <div class="tables-basic">
     <b-breadcrumb>
-      <b-breadcrumb-item>市政公司</b-breadcrumb-item>
+      <b-breadcrumb-item>财政金融部</b-breadcrumb-item>
       <b-breadcrumb-item active>支出信息</b-breadcrumb-item>
     </b-breadcrumb>
+    <h1 class="page-title fw-semi-bold">支出合同目录</h1>
     <b-row>
       <b-col>
-        <Widget title="<h5>市政公司项目支出情况统计表1111</h5>" customHeader settings close>
-          <div class="table-header d-flex align-items-center mb-3">
-            <b-form-file v-model="file" placeholder="请选择一个Excel文件" class="mr-3 mb-2" style="max-width: 360px;"></b-form-file>
-            <b-button variant="default" class="mr-3 mb-2" size="sm" @click="parseExcel">解析Excel</b-button>
-            <b-button variant="default" class="mr-3 mb-2" size="sm" @click="handleExportTable('DisburseTable1')">下载模板</b-button>
-            <b-button variant="primary" class="mr-3 mb-2 custom-btn" size="sm" @click="save">保存</b-button>
-            <b-form-select v-model="selectedUnit" :options="units" class="mr-3 mb-2 select-small" placeholder="选择相关单位"></b-form-select>
-            <div class="alert alert-info mb-0 ml-3">
-              注意：所有数据请在"合同收款细表"中录入，此表将自动汇总显示。
-            </div>
-          </div>
-
-          <!-- 添加Tab切换 -->
-          <el-tabs v-model="activeTab">
-            <el-tab-pane label="支出明细表" name="main">
-              <!-- Table -->
-              <div id="table">
-                <el-table :data="current" style="width: 100%" id="DisburseTable" height="500">
-                  <el-table-column type="selection" width="55"></el-table-column>
-                  <el-table-column prop="xiangguandanwei" label="相关单位" width="100"></el-table-column>
-                  <el-table-column prop="xiangmumingcheng" label="项目名称" width="180"></el-table-column>
-                  <el-table-column prop="hetongmingcheng" label="合同名称" width="300">
-                    <template slot-scope="scope">
-                      <span @click="goToDetailPage(scope.row)" style="cursor: pointer; text-decoration: underline; color:white">{{ scope.row.hetongmingcheng }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="hetongduifang" label="合同相对人" width="150"></el-table-column>
-                  <el-table-column prop="hetongjine" label="合同金额(万元)" width="100">
-                    <template slot="header">
-                      <span>合同金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="jiesuanjine" label="结算金额(万元)" width="100">
-                    <template slot="header">
-                      <span>结算金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="xiangmujindu" label="项目进度(百分比)" width="100">
-                    <template slot="header">
-                      <span>项目进度<br/>(百分比)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yingshoukuan" label="项目产值(万元)" width="100">
-                    <template slot="header">
-                      <span>项目产值<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="shishoukuan" label="已开票(万元)" width="100">
-                    <template slot="header">
-                      <span>已开票<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yifukuan" label="已付款(万元)" width="100">
-                    <template slot="header">
-                      <span>已付款<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yingfuweifu" label="应付未付(万元)" width="100">
-                    <template slot="header">
-                      <span>应付未付<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="guazhangjine" label="挂账金额(万元)" width="100">
-                    <template slot="header">
-                      <span>挂账金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="beizhu" label="备注" width="200"></el-table-column>
-                </el-table>
-                <el-table :data=[] style=" display:none;th: 100%" id="DisburseTable1" @selection-change="handleSelectionChange" height="500"  @cell-dblclick="handleCellDblclick">
-                
-                  <el-table-column prop="xiangguandanwei" label="相关单位" width="100"></el-table-column>
-
-                  <el-table-column prop="xiangmumingcheng" label="项目名称" width="180">
-                    
-                  </el-table-column>
-                  <el-table-column prop="hetongmingcheng" label="合同名称" width="300">
-                    <template slot-scope="scope">
-                      <span @click="goToDetailPage(scope.row)" style="cursor: pointer; color: #9f9fad;text-decoration: underline; color:blue">{{ scope.row.hetongmingcheng }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="hetongduifang" label="合同相对人" width="150">
-                  </el-table-column>
-
-                  <el-table-column prop="hetongjine" label="合同金额(万元)" width="100">
-                    <template slot="header">
-                      <span>合同金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="jiesuanjine" label="结算金额(万元)" width="100">
-                    <template slot="header">
-                      <span>结算金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="xiangmujindu" label="项目进度（百分比）" width="100">
-                    <template slot="header">
-                      <span>项目进度<br/>(百分比)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yingshoukuan" label="项目产值" width="100">
-                    <template slot="header">
-                      <span>项目产值<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="shishoukuan" label="已开票" width="100">
-                    <template slot="header">
-                      <span>已开票<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yifukuan" label="已付款" width="100">
-                    <template slot="header">
-                      <span>已付款<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="yingfuweifu" label="应付未付" width="100">
-                    <template slot="header">
-                      <span>应付未付<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="guazhangjine" label="挂账金额" width="100">
-                    <template slot="header">
-                      <span>挂账金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="beizhu" label="备注" width="200"></el-table-column>
-                </el-table>
-              </div>
-            </el-tab-pane>
+        <Widget title="<h5>支出合同台账</h5>" customHeader settings close>
+          <TableTemplate
+            ref="tableTemplate"
+            :tableData="contracts"
+            :columns="tableColumns"
+            :formFields="formFields"
+            :storageKey="'contract_management'"
+            :customFilter1="filterByProjectNumber"
+            :customFilter2="filterBySubsidiary"
+            :customFilter3="filterByContractUnit"
+            @update:tableData="updateTableData"
+            @row-click="goToDetailPage"
+          >
+            <!-- 项目编号过滤器 -->
+            <template v-slot:custom-filter1>
+              <b-form-input
+                v-model="projectNumberFilter"
+                placeholder="按项目编号过滤"
+                class="mr-3 mb-2"
+                style="width: 180px;"
+                @input="handleFilterChange"
+              />
+            </template>
             
-            <el-tab-pane label="合同收款细表" name="detail">
-              <!-- 新增表格 -->
-              <div class="table-header d-flex align-items-center mb-3">
-                <b-button variant="danger" class="mr-3 mb-2 custom-btn" size="sm" @click="deleteDetailSelectedRows">删除选中行</b-button>
-                <b-button variant="default" class="mr-3 mb-2 custom-btn" size="sm" @click="dialogVisible = true">新增条目</b-button>
-              </div>
-              <div id="detailTable">
-                <el-table :data="detailTableData" style="width: 100%" id="DetailTable" @selection-change="handleDetailSelectionChange" height="500" @cell-dblclick="handleDetailCellDblclick">
-                  <el-table-column type="selection" width="55"></el-table-column>
-                  <el-table-column prop="xuhao" label="序号" width="80"></el-table-column>
-                  <el-table-column prop="xiangmumingcheng" label="项目名称" width="150"></el-table-column>
-                  <el-table-column prop="hetongmingcheng" label="合同名称" width="200"></el-table-column>
-                  <el-table-column prop="hetongduifang" label="合同相对人" width="150"></el-table-column>
-                  <el-table-column prop="kaipiaoriqi" label="开票/收款日期" width="150"></el-table-column>
-                  <el-table-column prop="kaipiaojine" label="开票金额(不含税/万元)" width="150">
-                    <template slot="header">
-                      <span>开票金额<br/>(不含税/万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="shuie" label="进项税额(万元)" width="120">
-                    <template slot="header">
-                      <span>进项税额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="kaipiaojinehanshui" label="开票金额(含税/万元)" width="150">
-                    <template slot="header">
-                      <span>开票金额<br/>(含税/万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="shoukuanjine" label="收款金额(万元)" width="120">
-                    <template slot="header">
-                      <span>收款金额<br/>(万元)</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="piaohao" label="凭证编号" width="120"></el-table-column>
-                  <el-table-column prop="beizhu" label="备注" width="200"></el-table-column>
-                </el-table>
-              </div>
-            </el-tab-pane>
-          </el-tabs>
-
-          <!-- Add Contract Dialog -->
-          <el-dialog :visible.sync="dialogVisible" title="新增合同">
-            <el-form ref="form" :model="detailForm" label-width="140px">
-              <el-form-item label="项目名称">
-                <el-input v-model="detailForm.xiangmumingcheng"></el-input>
-              </el-form-item>
-              <el-form-item label="合同名称">
-                <el-input v-model="detailForm.hetongmingcheng"></el-input>
-              </el-form-item>
-              <el-form-item label="合同相对人">
-                <el-input v-model="detailForm.hetongduifang"></el-input>
-              </el-form-item>
-              <el-form-item label="开票/收款日期">
-                <el-input v-model="detailForm.kaipiaoriqi"></el-input>
-              </el-form-item>
-              <el-form-item label="开票金额（不含税）">
-                <el-input v-model="detailForm.kaipiaojine"></el-input>
-              </el-form-item>
-              <el-form-item label="进项税额">
-                <el-input v-model="detailForm.shuie"></el-input>
-              </el-form-item>
-              <el-form-item label="开票金额（含税）">
-                <el-input v-model="detailForm.kaipiaojinehanshui"></el-input>
-              </el-form-item>
-              <el-form-item label="收款金额">
-                <el-input v-model="detailForm.shoukuanjine"></el-input>
-              </el-form-item>
-              <el-form-item label="凭证编号">
-                <el-input v-model="detailForm.piaohao"></el-input>
-              </el-form-item>
-              <el-form-item label="备注">
-                <el-input v-model="detailForm.beizhu"></el-input>
-              </el-form-item>
-            </el-form>
-            <span slot="footer" class="dialog-footer">
-              <el-button @click="dialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitDetailForm">确定</el-button>
-            </span>
-          </el-dialog>
-
-          <!-- Pagination -->
-          <div class="table-footer">
-            <b-pagination v-model="currentPage" :total-rows="rows" size="lg"></b-pagination>
-          </div>
+            <!-- 承建子公司过滤器 -->
+            <template v-slot:custom-filter2>
+              <b-form-select
+                v-model="subsidiaryFilter"
+                :options="subsidiaryOptions"
+                placeholder="按承建子公司过滤"
+                class="mr-3 mb-2"
+                style="width: 180px;"
+                @change="handleFilterChange"
+              >
+                <template #first>
+                  <option :value="null">全部承建子公司</option>
+                </template>
+              </b-form-select>
+            </template>
+            
+            <!-- 签约单位过滤器 -->
+            <template v-slot:custom-filter3>
+              <b-form-select
+                v-model="contractUnitFilter"
+                :options="contractUnitOptions"
+                placeholder="按签约单位过滤"
+                class="mr-3 mb-2"
+                style="width: 180px;"
+                @change="handleFilterChange"
+              >
+                <template #first>
+                  <option :value="null">全部签约单位</option>
+                </template>
+              </b-form-select>
+            </template>
+          </TableTemplate>
         </Widget>
       </b-col>
     </b-row>
-    <el-dialog  
-      title="修改值"  
-      :visible.sync="dialogVisible1"  
-      width="30%"  
-      @close="dialogVisible1 = false"  
-    >  
-      <el-input v-model="editingValue" placeholder="请输入新值"></el-input>  
-      <span slot="footer" class="dialog-footer">  
-        <el-button @click="dialogVisible1 = false">取 消</el-button>  
-        <el-button type="primary" @click="updateValue">确 定</el-button>  
-      </span>  
-    </el-dialog>  
-
   </div>
-
-
 </template>
 
 <script>
-import Widget from '@/components/Widget/Widget';
-import axios from '@/utils/axios';
-import * as XLSX from 'xlsx/xlsx.mjs'
-import {export_excel} from '@/utils/exportExcel.js'
-import { saveData, getData } from '@/utils/dataStorage';
+import Widget from '@/components/Widget/Widget'
+import TableTemplate from '@/components/Template/xlsxTable'
+import Decimal from 'decimal.js'
 
 export default {
-  name: 'Disburse',
-  components: { Widget },
+  name: 'ContractManagement',
+  components: { Widget, TableTemplate },
   data() {
     return {
-      dialogVisible: false,
-      dialogVisible1:false,
-      editingRow: null, // 当前编辑的行数据  
-      editingValue: '', // 输入框中的值  
-      editingcolumn: null,
-      file: null,
-      currentPage: 1,
-      tableData: [],
-      selectedRows: [],
-      selectedUnit: "", // Selected unit dropdown value
-      selectedProject: "",
-      units: ["全部"], // Options for 相关单位 dropdown
-      projects: ["全部"], // Options for 项目名称 dropdown
-      department: ["市政公司", "博泰酒店", "房地产", "建设统筹部", "时代空港", "青清水务", "瑞景园林", "首钢", "投资发展部", "物业公司"],
-      form: {
-        // xuhao:this.tableData.length+1,
-        xiangguandanwei: "",
-        xiangmumingcheng: "",
-        hetongmingcheng:"",
-        hetongduifang: "",
-        hetongjine: "",
-        jiesuanjine: "",
-        xiangmujindu: "",
-        yingshoukuan: "",
-        shishoukuan: "",
-        yifukuan:"",
-        yingfuweifu: "",
-        guazhangjine:"",
-        beizhu: ""
-      },
-      activeTab: 'main',
-      detailTableData: [], // 新增表格数据
-      detailSelectedRows: [], // 新增表格选中行
-      detailForm: {
-        xuhao: '',
-        xiangmumingcheng: '',
+      contracts: [],
+      projectNumberFilter: '',      // 项目编号过滤条件
+      subsidiaryFilter: null,       // 承建子公司过滤条件
+      contractUnitFilter: null,     // 签约单位过滤条件
+      subsidiaryOptions: [],        // 承建子公司选项
+      contractUnitOptions: [],      // 签约单位选项
+      tableColumns: [
+        { prop: 'xuhao', label: '序号', width: 60},
+        { prop: 'xiangmubianhao', label: '项目编号', width: 120 },
+        { prop: 'xiangmumingcheng', label: '项目名称', width: 200 },
+        { 
+          prop: 'qianyuezigongsi', 
+          label: '承建子公司', 
+          width: 150,
+        },
+        { prop: 'hetongbianhao', label: '合同编号', width: 150 ,slot:true},
+        { prop: 'hetongmingcheng', label: '合同名称', width: 200 },
+        { prop: 'qianyuedanwei', label: '签约单位', width: 150 },
+        { 
+          prop: 'qiandingriqi', 
+          label: '签订日期', 
+          width: 120,
+          type: 'date'
+        },
+        
+        { prop: 'zhuyaoneirong', label: '主要内容', width: 200 },
+        { 
+          prop: 'hetongjine_buhanshui', 
+          label: '合同金额(不含税价)', 
+          width: 150,
+          type: 'highPrecision',
+
+        },
+        { 
+          prop: 'shuie', 
+          label: '税额', 
+          width: 120,
+          type: 'highPrecision',
+        },
+        { 
+          prop: 'hetongjine_hanshui', 
+          label: '合同金额（含税价）', 
+          type: 'variable',
+          calculate: (row) => {
+            const buhanshui = new Decimal(row.hetongjine_buhanshui || 0)
+            const shuie = new Decimal(row.shuie || 0)
+            return buhanshui.plus(shuie).toFixed(2)
+          }
+        },
+        { 
+          prop: 'buchongjine', 
+          label: '补充金额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'hetongzonge', 
+          label: '合同结算金额', 
+          width: 120,
+          type: 'variable',
+          calculate: (row) => {
+            const hanshui = new Decimal(row.hetongjine_hanshui || 0)
+            const buchong = new Decimal(row.buchongjine || 0)
+            return hanshui.plus(buchong).toFixed(2)
+          }
+        },
+        { 
+          prop: 'fukuanzonge', 
+          label: '付款总额', 
+          width: 120,
+          type: 'highPrecision',
+        },
+        { 
+          prop: 'yifukuanbili', 
+          label: '已付款比例', 
+          width: 120,
+          type: 'variable',
+          calculate: (row) => {
+            const fukuan = new Decimal(row.fukuanzonge || 0)
+            const zonge = new Decimal(row.hetongzonge || 0)
+            if (zonge.equals(0)) return '0.00%'
+            return fukuan.dividedBy(zonge).times(100).toFixed(2) + '%'
+          }
+        },
+        { 
+          prop: 'kaipiaojine', 
+          label: '开票金额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'kaipiaoshuei', 
+          label: '开票税额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'kaipiaozonge', 
+          label: '开票总额', 
+          width: 120,
+          type: 'highPrecision',
+        },
+        { 
+          prop: 'shuilv', 
+          label: '税率(%)', 
+          width: 100,
+          type: 'variable',
+          calculate: (row) => {
+            const zonge = new Decimal(row.kaipiaoshuei || 0)
+            const fukuan = new Decimal(row.kaipiaozonge || 0)
+            return zonge.times(100).dividedBy(fukuan).toFixed(2)
+          }
+        },
+        { 
+          prop: 'weifujine_hanshui', 
+          label: '未付余额(含税)', 
+          width: 150,
+          type: 'variable',
+          calculate: (row) => {
+            const zonge = new Decimal(row.hetongzonge || 0)
+            const fukuan = new Decimal(row.fukuanzonge || 0)
+            return zonge.minus(fukuan).toFixed(2)
+          }
+        },
+        { 
+          prop: 'guazhangjine_hanshui', 
+          label: '挂账金额(含税)', 
+          width: 150,
+          type: 'variable',
+          calculate: (row) => {
+            const zonge = new Decimal(row.kaipiaozonge || 0)
+            const kaipiao = new Decimal(row.fukuanzonge || 0)
+            return zonge.minus(kaipiao).toFixed(2)
+          }
+        },
+        { 
+          prop: 'weikaipiaojine', 
+          label: '未开票金额', 
+          width: 150,
+          type: 'variable',
+          calculate: (row) => {
+            const zonge = new Decimal(row.hetongzonge || 0)
+            const kaipiao = new Decimal(row.kaipiaozonge || 0)
+            return zonge.minus(kaipiao).toFixed(2)
+          }
+        },
+        { 
+          prop: 'shifoujieqing', 
+          label: '是否结清', 
+          width: 100,
+          type: 'variable',
+          calculate: (row) => {
+            if (!row.weifujine_hanshui) return '结清'
+            return parseFloat(row.weifujine_hanshui||0) <= 0 ? '结清' : '未结清'
+          }
+        },
+        { prop: 'beizhu', label: '备注', width: 200 },
+        { 
+          prop: 'hetongleixing', 
+          label: '合同类型', 
+          width: 120
+        },
+        { 
+          prop: 'yinshuashuilv', 
+          label: '印花税税率(%)', 
+          width: 120,
+          type: 'highPrecision',
+        },
+        { 
+          prop: 'shuishouyouhui', 
+          label: '收税优惠(%)', 
+          width: 120,
+          type: 'highPrecision',
+        },
+        { 
+          prop: 'yinshuashuie', 
+          label: '印花税税额', 
+          width: 120,
+          type: 'variable',
+          calculate: (row) => {
+            const buhanshui = new Decimal(row.hetongjine_buhanshui || 0)
+            const shuishouyouhui = new Decimal(row.shuishouyouhui || 0).dividedBy(100)
+            const yinshuashuilv = new Decimal(row.yinshuashuilv || 0).dividedBy(100)
+            
+            const tax = buhanshui
+              .times(new Decimal(1).minus(shuishouyouhui))
+              .times(yinshuashuilv)
+            
+            return tax.toFixed(2)
+          }
+        },
+        { 
+          prop: 'jiaonayinshuashuiqi', 
+          label: '缴纳印花税税期', 
+          width: 150,
+          type: 'date'
+        }
+      ],
+      formFields: {
+        xuhao: 0,
+        qianyuezigongsi: '',
+        hetongbianhao: '',
         hetongmingcheng: '',
-        hetongduifang: '',
-        kaipiaoriqi: '',
-        kaipiaojine: '',
-        shuie: '',
-        kaipiaojinehanshui: '',
-        shoukuanjine: '',
-        piaohao: '',
-        beizhu: ''
+        qianyuedanwei: '',
+        qiandingriqi: '',
+        xiangmubianhao: '',
+        xiangmumingcheng: '',
+        zhuyaoneirong: '',
+        hetongjine_buhanshui: 0,
+        shuie: 0,
+        hetongjine_hanshui: 0,
+        buchongjine: 0,
+        hetongzonge: 0,
+        fukuanjine: 0,
+        fukuanzonge: 0,
+        yifukuanbili: '0%',
+        kaipiaojine: 0,
+        kaipiaoshuei: 0,
+        kaipiaozonge: 0,
+        shuilv: 0,
+        weifujine_hanshui: 0,
+        guazhangjine_hanshui: 0,
+        weikaipiaojine: 0,
+        shifoujieqing: '否',
+        beizhu: '',
+        hetongleixing: '',
+        yinshuashuilv: 0,
+        shuishouyouhui: '0%',
+        yinshuashuie: 0,
+        jiaonayinshuashuiqi: ''
       }
-    };
+    }
+  },
+
+  methods: {
+    
+    updateTableData(newData) {
+    this.contracts = newData;
+  },
+  
+    goToDetailPage(row) {
+  this.$router.push({ 
+    name: 'expense-contract-details', 
+    params: { contractId: row.hetongbianhao } 
+  })
+},
+updateTableData(newData) {
+      this.contracts = newData;
+      // 更新承建子公司和签约单位选项
+      this.updateFilterOptions();
+    },
+    
+    // 更新过滤器选项
+    updateFilterOptions() {
+      const subsidiaries = new Set();
+      const contractUnits = new Set();
+      
+      this.contracts.forEach(contract => {
+        if (contract.qianyuezigongsi) {
+          subsidiaries.add(contract.qianyuezigongsi);
+        }
+        if (contract.qianyuedanwei) {
+          contractUnits.add(contract.qianyuedanwei);
+        }
+      });
+      
+      this.subsidiaryOptions = Array.from(subsidiaries).map(item => ({
+        value: item,
+        text: item
+      }));
+      
+      this.contractUnitOptions = Array.from(contractUnits).map(item => ({
+        value: item,
+        text: item
+      }));
+    },
+    
+    // 按项目编号过滤
+    filterByProjectNumber(item) {
+      if (!this.projectNumberFilter) return true;
+      return item.xiangmubianhao && 
+             item.xiangmubianhao.toLowerCase().includes(this.projectNumberFilter.toLowerCase());
+    },
+    
+    // 按承建子公司过滤
+    filterBySubsidiary(item) {
+      if (!this.subsidiaryFilter) return true;
+      return item.qianyuezigongsi === this.subsidiaryFilter;
+    },
+    
+    // 按签约单位过滤
+    filterByContractUnit(item) {
+      if (!this.contractUnitFilter) return true;
+      return item.qianyuedanwei === this.contractUnitFilter;
+    },
+    
+    // 过滤器变化处理
+    handleFilterChange() {
+      this.$refs.tableTemplate.clearSearch();
+    },
   },
   mounted() {
-    this.fetchData();
-    this.fetchDetailData();
-    // 添加定时刷新
-    this.refreshInterval = setInterval(() => {
-      if (this.activeTab === 'main') {
-        this.fetchData();
-      } else {
-        this.fetchDetailData();
-      }
-    }, 300000); // 每5分钟刷新一次
-  },
-  beforeDestroy() {
-    // 清除定时器
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-    }
-    // 保存数据
-    this.save();
-  },
-
-  computed: {
-    // 聚合后的主表数据
-    aggregatedData() {
-      const aggregated = {};
-      
-      this.detailTableData.forEach(detail => {
-        const key = detail.hetongmingcheng;
-        if (!aggregated[key]) {
-          aggregated[key] = {
-            xiangguandanwei: detail.xiangguandanwei,
-            xiangmumingcheng: detail.xiangmumingcheng,
-            hetongmingcheng: detail.hetongmingcheng,
-            hetongduifang: detail.hetongduifang,
-            hetongjine: 0,
-            jiesuanjine: 0,
-            xiangmujindu: 0,
-            yingshoukuan: 0,
-            shishoukuan: 0,
-            yifukuan: 0,
-            yingfuweifu: 0,
-            guazhangjine: 0,
-            beizhu: detail.beizhu || '',
-            recordCount: 0
-          };
-        }
-        
-        const current = aggregated[key];
-        current.recordCount++;
-        
-        // 累加金额
-        if (detail.kaipiaojinehanshui && !isNaN(parseFloat(detail.kaipiaojinehanshui))) {
-          current.hetongjine = parseFloat(detail.kaipiaojinehanshui);
-        }
-        
-        if (detail.shoukuanjine && !isNaN(parseFloat(detail.shoukuanjine))) {
-          current.yifukuan += parseFloat(detail.shoukuanjine);
-        }
-        
-        // 计算应付未付
-        current.yingfuweifu = current.hetongjine - current.yifukuan;
-        
-        // 更新备注
-        if (detail.beizhu && detail.beizhu !== current.beizhu) {
-          current.beizhu = current.beizhu ? `${current.beizhu}; ${detail.beizhu}` : detail.beizhu;
-        }
-      });
-      
-      return Object.values(aggregated);
-    },
-    
-    // 过滤后的数据
-    filteredItems() {
-      let filteredData = this.aggregatedData;
-      if (this.selectedUnit && this.selectedUnit !== "全部") {
-        filteredData = filteredData.filter(item => item.xiangguandanwei === this.selectedUnit);
-      }
-      if (this.selectedProject && this.selectedProject !== "全部") {
-        filteredData = filteredData.filter(item => item.xiangmumingcheng === this.selectedProject);
-      }
-      return filteredData;
-    },
-    
-    current() {
-      const start = (this.currentPage - 1) * 20;
-      const end = start + 20;
-      return this.filteredItems.slice(start, end);
-    },
-    
-    rows() {
-      return this.filteredItems.length;
-    },
-  },
-  methods: {
-    parseExcel() {
-        if (this.file) {
-          let that = this
-          that.tableData = []
-          const reader = new FileReader();
-          reader.readAsArrayBuffer(this.file);
-          reader.onload = function (e) {
-            const workbook = XLSX.read(e.target.result, { type: 'binary' });
-            // 获取第一个工作表
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const title = ["xiangguandanwei", "xiangmumingcheng", "hetongmingcheng", "hetongduifang", "hetongjine", "jiesuanjine", "xiangmujindu", "yingshoukuan","shishoukuan","yifukuan",  "yingfuweifu", "guazhangjine",  "beizhu"]
-            // 解析工作表数据
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            // console.log('解析后的数据为：', jsonData)
-            for (let i = 2; i < jsonData.length; i++) {
-              let obj = {};
-              if (jsonData[i].length == 0) {
-                continue
-              }
-              for (let j = 0; j < jsonData[i].length; j++) {
-                if (typeof jsonData[i][j + 1] === 'number') {
-                  obj[title[j]] = jsonData[i][j + 1].toFixed(2);
-                } else {
-                  obj[title[j]] = jsonData[i][j + 1];
-                }
-  
-              }
-              obj["isEditing"] = false
-              that.tableData.push(obj)
-            }
-  
-          };
-        }
-      },
-
-
-    resetForm() {
-		  this.form = {
-        xiangguandanwei: "",
-        xiangmumingcheng: "",
-        hetongmingcheng:"",
-        hetongduifang: "",
-        hetongjine: "",
-        jiesuanjine: "",
-        xiangmujindu: "",
-        yingshoukuan: "",
-        shishoukuan: "",
-        yifukuan:"",
-        yingfuweifu: "",
-        guazhangjine:"",
-        beizhu: ""
-		  }
-		},
-
-    submitForm() {
-		  console.log(typeof this.form.file)
-		  const newRow = {
-			xuhao: this.tableData.length + 1,
-		  xiangguandanwei:this.form.xiangguandanwei,
-      xiangmumingcheng:this.form.xiangmumingcheng,
-      hetongmingcheng:this.form.hetongmingcheng,
-      hetongduifang:this.form.hetongduifang,
-      hetongjine:this.form.hetongjine,
-      jiesuanjine:this.form.jiesuanjine,
-      xiangmujindu:this.form.xiangmujindu,
-      yingshoukuan:this.form.yingshoukuan,
-      shishoukuan:this.form.shishoukuan,
-      yifukuan:this.form.yifukuan,
-      yingfuweifu:this.form.yingfuweifu,
-      guazhangjine:this.form.guazhangjine,
-      beizhu:this.form.beizhu
-
-		  };
-	
-		  // 将新行添加到表格数据数组中
-		  this.tableData.push(newRow);
-	
-		  // 重置表单
-		  this.resetForm();
-	
-		  // 关闭对话框
-		  this.dialogVisible = false;
-		},
-
-
-    handleCellDblclick(row, column, cell, event) {  
-      this.editingRow = row.xuhao; // 保存当前编辑的行数据 
-      console.log(row.xuhao);
-      this.editingcolumn= column.property;
-    
-      this.editingValue = row[column.property]; // 设置输入框的初始值为当前单元格的值  
-      this.dialogVisible1 = true; // 显示对话框  
-    },  
-
-    isNumeric(str) {  
-    return !isNaN(parseFloat(str)) && isFinite(str);  
-},  
-
-    updateValue() {  
-      if (this.editingRow && this.editingValue !== this.editingRow.value) {  
-        if (this.shouldValidateNumeric(this.editingcolumn) && !this.isNumeric(this.editingValue)) {
-          this.$message.error('请输入有效的数字');
-          return;
-        }
-
-        if (this.activeTab === 'main') {
-          this.tableData[this.editingRow][this.editingcolumn] = this.isNumeric(this.editingValue) ? 
-            Number(this.editingValue) : this.editingValue;
-        } else {
-          const index = this.detailTableData.indexOf(this.editingRow);
-          if (index > -1) {
-            this.detailTableData[index][this.editingcolumn] = this.isNumeric(this.editingValue) ? 
-              Number(this.editingValue) : this.editingValue;
-          }
-        }
-      }  
-      this.dialogVisible1 = false; // 关闭对话框  
-      
-    },  
-
-    handleExportTable(table_id) {
-            this.$nextTick(function () {
-                export_excel(table_id)
-            })
-  
-        },
-
-    // Handle selection change
-    handleSelectionChange(val) {
-      this.selectedRows = val;
-    },
-    goToDetailPage(row) {
-      this.$router.push({ name: 'detail', params: { contract: row } });
-    },
-    deleteSelectedRows() {
-      if (this.selectedRows.length > 0) {
-        this.selectedRows.forEach(row => {
-          const index = this.tableData.indexOf(row);
-          if (index > -1) {
-            this.tableData.splice(index, 1);
-          }
-        });
-        this.selectedRows = [];
-        let i=0;
-        for(i=0;i<this.tableData.length;i++) this.tableData[i].xuhao=i;
-      }
-    },
-    getDropdownOptions(field) {
-      const options = new Set();
-      this.tableData.forEach(item => {
-        options.add(item[field]);
-      });
-      return Array.from(options);
-    },
-    async save() {
-      try {
-        await saveData('disburse', this.tableData);
-        await saveData('disburse_detail', this.detailTableData);
-        this.$message.success('数据保存成功');
-      } catch (error) {
-        console.error('保存数据失败:', error);
-        this.$message.error('保存数据失败');
-      }
-    },
-    async fetchDetailData() {
-      try {
-        const data = await getData('disburse_detail');
-        this.detailTableData = data || [];
-        this.units = ["全部", ...new Set(this.aggregatedData.map(item => item.xiangguandanwei))];
-        this.projects = ["全部", ...new Set(this.aggregatedData.map(item => item.xiangmumingcheng))];
-      } catch (error) {
-        console.error('获取明细数据失败:', error);
-        this.$message.error('获取明细数据失败');
-      }
-    },
-    handleDetailSelectionChange(val) {
-      this.detailSelectedRows = val;
-    },
-    handleDetailCellDblclick(row, column, cell, event) {
-      this.editingRow = row;
-      this.editingColumn = column.property;
-      this.editingValue = row[column.property];
-      this.dialogVisible1 = true;
-    },
-    updateValue() {
-      if (this.editingRow && this.editingValue !== this.editingRow[this.editingColumn]) {
-        if (this.shouldValidateNumeric(this.editingColumn) && !this.isNumeric(this.editingValue)) {
-          this.$message.error('请输入有效的数字');
-          return;
-        }
-        
-        const index = this.detailTableData.indexOf(this.editingRow);
-        if (index > -1) {
-          this.$set(this.detailTableData[index], this.editingColumn, 
-            this.isNumeric(this.editingValue) ? Number(this.editingValue) : this.editingValue
-          );
-        }
-      }
-      this.dialogVisible1 = false;
-    },
-    // 添加数值字段验证方法
-    shouldValidateNumeric(field) {
-      const numericFields = [
-        'hetongjine', 'jiesuanjine', 'xiangmujindu', 'yingshoukuan', 
-        'shishoukuan', 'yifukuan', 'yingfuweifu', 'guazhangjine',
-        'kaipiaojine', 'shuie', 'kaipiaojinehanshui', 'shoukuanjine'
-      ];
-      return numericFields.includes(field);
-    },
-    deleteDetailSelectedRows() {
-      if (this.detailSelectedRows.length > 0) {
-        this.detailSelectedRows.forEach(row => {
-          const index = this.detailTableData.indexOf(row);
-          if (index > -1) {
-            this.detailTableData.splice(index, 1);
-          }
-        });
-        this.detailSelectedRows = [];
-      }
-    },
-    async submitDetailForm() {
-      try {
-        // 生成新的序号
-        const newXuhao = this.detailTableData.length > 0 
-          ? Math.max(...this.detailTableData.map(item => Number(item.xuhao))) + 1 
-          : 1;
-
-        // 创建新的明细数据对象
-        const newDetail = {
-          ...this.detailForm,
-          xuhao: newXuhao
-        };
-
-        // 将新增的明细数据添加到表格数据中
-        this.detailTableData.push(newDetail);
-
-        // 保存数据
-        await this.save();
-
-        // 重置新增表单
-        this.detailForm = {
-          xuhao: '',
-          xiangmumingcheng: '',
-          hetongmingcheng: '',
-          hetongduifang: '',
-          kaipiaoriqi: '',
-          kaipiaojine: '',
-          shuie: '',
-          kaipiaojinehanshui: '',
-          shoukuanjine: '',
-          piaohao: '',
-          beizhu: ''
-        };
-
-        // 关闭新增对话框
-        this.dialogVisible = false;
-
-        // 显示成功提示
-        this.$message.success('添加成功');
-      } catch (error) {
-        console.error('添加失败:', error);
-        this.$message.error('添加失败，请重试');
-      }
-    },
-    async fetchData() {
-      try {
-        const data = await getData('disburse');
-        this.tableData = data || [];
-        let i = 0;
-        for(i = 0; i < this.tableData.length; i++) {
-          this.tableData[i].xuhao = i;
-        }
-        this.units = ["全部", ...this.getDropdownOptions('xiangguandanwei')];
-        this.projects = ["全部", ...this.getDropdownOptions('xiangmumingcheng')];
-      } catch (error) {
-        console.error('获取数据失败:', error);
-        this.$message.error('获取数据失败');
-      }
-    },
-  },
-};
+    // 初始化时加载过滤器选项
+    this.updateFilterOptions();
+  }
+}
 </script>
-
-<style lang="scss" scoped>
-@import '../../styles/app';
-
-#table{
-  color:rgb(255, 255, 255) !important;
-  font-weight: 600;
-}
-#DisburseTable
-{
-  color:rgb(255, 255, 255) !important;
-  font-weight: 600;
-}
-.table-header {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
-  margin-bottom: 15px;
-}
-
-.table-footer {
-  margin-top: 30px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#table, #detailTable {
-  ::v-deep .cell {
-    color: white !important;
-    white-space: pre-line;
-  }
-
-  ::v-deep .el-table__header th {
-    padding: 8px 0;
-    height: 60px;
-    line-height: 20px;
-    color: white !important;
-    .cell {
-      white-space: pre-line;
-    }
-  }
-
-  ::v-deep .el-table__body tr,
-  ::v-deep .el-table__body td {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-    color: white !important;
-  }
-
-  ::v-deep .el-table {
-    background-color: transparent !important;
-    color: white !important;
-  }
-
-  ::v-deep .el-table__expanded-cell {
-    background-color: transparent !important;
-  }
-
-  ::v-deep .el-table th,
-  ::v-deep .el-table tr,
-  ::v-deep .el-table td {
-    background-color: transparent;
-    color: white !important;
-  }
-}
-
-.clickable {
-  cursor: pointer;
-  color: #9f9fad;
-  text-decoration: underline;
-}
-
-.select-small {
-  max-width: 180px;
-}
-
-#detailTable {
-  color: rgb(255, 255, 255) !important;
-  font-weight: 600;
-}
-
-// 添加Tabs文字样式
-::v-deep .el-tabs__item {
-  color: white !important;
-  &.is-active {
-    color: #409EFF !important;
-  }
-}
-</style>

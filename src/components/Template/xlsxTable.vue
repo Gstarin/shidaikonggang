@@ -28,6 +28,11 @@
       <b-button variant="info" class="mr-3 mb-2 custom-btn" size="sm" @click="toggleEditMode">
         {{ editMode ? '退出编辑' : '编辑模式' }}
       </b-button>
+      <history-viewer
+        :storage-key="storageKey"
+        @restore="handleHistoryRestore"
+        @save="save"
+      />
       <b-form-input 
         v-model="searchText" 
         placeholder="输入搜索内容" 
@@ -41,7 +46,7 @@
       <slot name="custom-filter2"></slot>
       <slot name="custom-filter3"></slot>
     </div>
-
+    
     <div id="table" class="table-wrapper">
       <el-table 
         :data="displayData" 
@@ -141,6 +146,7 @@
 import ExcelHandler from './ExcelHandler.vue'
 import dbInstance from '@/database/db.js'
 import axios from '@/utils/axios.js'
+import HistoryViewer from './HistoryViewer.vue'
 
 // 独立的单元格组件
 const TableCell = {
@@ -273,6 +279,31 @@ const TableCell = {
           }
         })
       }
+
+      // 高精度数字
+      if (column.type === 'highPrecision') {
+        return h('el-input', {
+          props: {
+            value: row[column.prop],
+            type: 'text',
+            disabled: row.isTotal
+          },
+          on: {
+            input: val => { 
+              // 验证输入是否为有效数字
+              if (/^-?\d*\.?\d*$/.test(val)) {
+                row[column.prop] = val === '' ? null : val
+              }
+            },
+            blur: () => {
+              // 失去焦点时格式化显示
+              if (row[column.prop] !== null && row[column.prop] !== '') {
+                row[column.prop] = new Decimal(row[column.prop]).toFixed(2)
+              }
+            }
+          }
+        })
+      }
       
       // 普通文本输入
       return h('el-input', {
@@ -308,11 +339,12 @@ const TableCell = {
 export default {
   components: {
     ExcelHandler,
-    TableCell
+    TableCell,
+    HistoryViewer,
   },
-  created() {
+  async created() {
     this.resetForm()
-    this.loadData() // 组件创建时自动加载数据
+    await this.loadData() // 组件创建时自动加载数据
   },
   props: {
     tableData: Array,
@@ -419,7 +451,9 @@ export default {
     clearTable() {
       this.$emit('update:tableData', [])
     },
-    
+    handleHistoryRestore(data) {
+      this.$emit('update:tableData', data)
+    },
     handleExcelParsed(success, error) {
       if (success) {
         this.$message.success('Excel导入成功')

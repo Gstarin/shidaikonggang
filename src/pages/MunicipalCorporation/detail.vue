@@ -1,84 +1,63 @@
 <template>
-  <div class="detail">
+  <div class="tables-basic">
     <b-breadcrumb>
-      <b-breadcrumb-item>市政公司</b-breadcrumb-item>
-      <b-breadcrumb-item active>收入信息</b-breadcrumb-item>
+      <b-breadcrumb-item to="/income-contract">财政金融部</b-breadcrumb-item>
+      <b-breadcrumb-item>收入信息</b-breadcrumb-item>
+      <b-breadcrumb-item active>合同收款详情</b-breadcrumb-item>
     </b-breadcrumb>
+    <h1 class="page-title fw-semi-bold">合同收款详情 - {{ contractInfo.hetongbianhao }} {{ contractInfo.hetongmingcheng }}</h1>
+    
+    <!-- 修改后的顶部信息展示区域 -->
+    <b-row class="mb-4">
+      <b-col>
+        <b-card class="info-card">
+          <b-row class="info-row">
+            <b-col md="3" class="info-item">
+              <div class="info-label">甲方单位</div>
+              <div class="info-value">{{ contractInfo.jiafangdanwei || '-' }}</div>
+            </b-col>
+            <b-col md="3" class="info-item">
+              <div class="info-label">项目编号</div>
+              <div class="info-value">{{ contractInfo.xiangmubianhao || '-' }}</div>
+            </b-col>
+            <b-col md="3" class="info-item">
+              <div class="info-label">项目名称</div>
+              <div class="info-value">{{ contractInfo.xiangmumingcheng || '-' }}</div>
+            </b-col>
+            <b-col md="3" class="info-item">
+              <div class="info-label">合同结算金额</div>
+              <div class="info-value">{{ formatCurrency(contractInfo.hetongzonge) || '-' }}</div>
+            </b-col>
+          </b-row>
+          <b-row class="info-row">
+            <b-col md="6" class="info-item">
+              <div class="info-label">应收余额</div>
+              <div class="info-value highlight">{{ formatCurrency(contractInfo.yingshouyue_hanshui) || '0.00' }}</div>
+            </b-col>
+            <b-col md="6" class="info-item">
+              <div class="info-label">执行情况</div>
+              <div class="info-value" :class="{'text-success': isCleared, 'text-warning': !isCleared}">
+                {{ contractInfo.shifoujieqing || '未结清' }}
+                <span v-if="isCleared" class="cleared-badge">已结清</span>
+                <span v-else class="uncleared-badge">未结清</span>
+              </div>
+            </b-col>
+          </b-row>
+        </b-card>
+      </b-col>
+    </b-row>
+    
     <b-row>
       <b-col>
-        <Widget title="<h5>合同收款细表</h5>" customHeader settings close>
-          <div class="table-header">
-            <b-form-file v-model="file" placeholder="请选择一个Excel文件"
-              style="width: 500px; margin-right: 15px;"></b-form-file>
-            <b-button variant="default" class="mr-3" size="sm" @click="parseExcel">解析Excel</b-button>
-            <b-button variant="default" class="mr-3" size="sm" @click="handleExportTable('DisburseTable')">导出Excel</b-button>
-            <b-button variant="default" class="mr-3" size="sm" @click="handleExportTable('DisburseTable1')">下载模板</b-button>
-            <b-button variant="default" class="mr-3" size="sm" @click="dialogVisible = true"
-              style="width: 100px; height: 35px;">增加合同</b-button>
-            <b-button variant="danger" class="mr-3" size="sm" @click="deleteSelectedRows">删除条目</b-button>
-          </div>
-          <div id="table">
-            <el-table :data="detailData" style="width: 100%" id="DisburseTable" @selection-change="handleSelectionChange">
-              <el-table-column type="selection" width="55"></el-table-column>
-              <el-table-column prop="xuhao" label="序号" width="50"></el-table-column>
-              <el-table-column prop="hetongmingcheng" label="合同名称" width="200"></el-table-column>
-              <el-table-column prop="hetongduifang" label="合同相对人" width="150"></el-table-column>
-              <el-table-column prop="kaipiao_date" label="开票/核实日期" width="150"></el-table-column>
-              <el-table-column prop="kaipiaojine_no_tax" label="开票金额（不含税）" width="150"></el-table-column>
-              <el-table-column prop="zhuanxiangshuie" label="专项税额" width="100"></el-table-column>
-              <el-table-column prop="kaipiaojine_with_tax" label="开票金额（含税）" width="150"></el-table-column>
-              <el-table-column prop="shoukuanjine" label="收款金额" width="100"></el-table-column>
-              <el-table-column prop="zhengju_bianhao" label="凭证编号" width="100"></el-table-column>
-              <el-table-column prop="beizhu" label="备注" width="200"></el-table-column>
-            </el-table>
-            <el-table :data="[]" style="display:none;width: 100%" id="DisburseTable1">
-              <el-table-column prop="xuhao" label="序号" width="50"></el-table-column>
-              <el-table-column prop="hetongmingcheng" label="合同名称" width="200"></el-table-column>
-              <el-table-column prop="hetongduifang" label="合同相对人" width="150"></el-table-column>
-              <el-table-column prop="kaipiao_date" label="开票/核实日期" width="150"></el-table-column>
-              <el-table-column prop="kaipiaojine_no_tax" label="开票金额（不含税）" width="150"></el-table-column>
-              <el-table-column prop="zhuanxiangshuie" label="专项税额" width="100"></el-table-column>
-              <el-table-column prop="kaipiaojine_with_tax" label="开票金额（含税）" width="150"></el-table-column>
-              <el-table-column prop="shoukuanjine" label="收款金额" width="100"></el-table-column>
-              <el-table-column prop="zhengju_bianhao" label="凭证编号" width="100"></el-table-column>
-              <el-table-column prop="beizhu" label="备注" width="200"></el-table-column>
-            </el-table>
-          </div>
-          <el-dialog :visible.sync="dialogVisible" title="新增收款信息">
-            <el-form ref="form" :model="form" label-width="140px">
-              <el-form-item label="合同名称">
-                <el-input v-model="form.hetongmingcheng"></el-input>
-              </el-form-item>
-              <el-form-item label="合同相对人">
-                <el-input v-model="form.hetongduifang"></el-input>
-              </el-form-item>
-              <el-form-item label="开票/核实日期">
-                <el-date-picker v-model="form.kaipiao_date" type="date" placeholder="请选择日期"></el-date-picker>
-              </el-form-item>
-              <el-form-item label="开票金额（不含税）">
-                <el-input v-model.number="form.kaipiaojine_no_tax"></el-input>
-              </el-form-item>
-              <el-form-item label="专项税额">
-                <el-input v-model.number="form.zhuanxiangshuie"></el-input>
-              </el-form-item>
-              <el-form-item label="开票金额（含税）">
-                <el-input v-model.number="form.kaipiaojine_with_tax"></el-input>
-              </el-form-item>
-              <el-form-item label="收款金额">
-                <el-input v-model.number="form.shoukuanjine"></el-input>
-              </el-form-item>
-              <el-form-item label="凭证编号">
-                <el-input v-model="form.zhengju_bianhao"></el-input>
-              </el-form-item>
-              <el-form-item label="备注">
-                <el-input v-model="form.beizhu"></el-input>
-              </el-form-item>
-            </el-form>
-            <span slot="footer" class="dialog-footer">
-              <el-button @click="dialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitForm">确定</el-button>
-            </span>
-          </el-dialog>
+        <Widget title="<h5>收款明细</h5>" customHeader settings close>
+          <TableTemplate
+            ref="paymentTable"
+            :tableData="paymentDetails"
+            :columns="paymentColumns"
+            :formFields="paymentFormFields"
+            :storageKey="`income_contract_payments_${contractInfo.hetongbianhao}`"
+            @update:tableData="updatePaymentData"
+          />
         </Widget>
       </b-col>
     </b-row>
@@ -86,154 +65,269 @@
 </template>
 
 <script>
-import Widget from '@/components/Widget/Widget';
-import axios from '@/utils/axios.js';
-import * as XLSX from 'xlsx/xlsx.mjs';
-import { export_excel } from '@/utils/exportExcel.js';
+import Widget from '@/components/Widget/Widget'
+import TableTemplate from '@/components/Template/xlsxTable'
+import Decimal from 'decimal.js'
+import dbInstance from '@/database/db.js'
 
 export default {
-  name: 'Detail',
-  components: { Widget },
+  name: 'detail',
+  components: { Widget, TableTemplate },
   data() {
     return {
-      detailData: [],
-      dialogVisible: false,
-      file: null,
-      selectedRows: [],
-      form: {
-        hetongmingcheng: '',
-        hetongduifang: '',
-        kaipiao_date: '',
-        kaipiaojine_no_tax: '',
-        zhuanxiangshuie: '',
-        kaipiaojine_with_tax: '',
-        shoukuanjine: '',
-        zhengju_bianhao: '',
+      contractInfo: {},
+      paymentDetails: [],
+      paymentColumns: [
+        { prop: 'xuhao', label: '序号', width: 60 },
+        { 
+          prop: 'jizhangriqi', 
+          label: '记账日期', 
+          width: 120,
+          type: 'date'
+        },
+        { prop: 'zhaiyao', label: '摘要', width: 200 },
+        { 
+          prop: 'kaipiaojine', 
+          label: '开票金额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'kaipiaoshue', 
+          label: '开票税额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'jiashuiheji', 
+          label: '价税合计', 
+          width: 120,
+          type: 'variable',
+          calculate: (row) => {
+            const kaipiaojine = new Decimal(row.kaipiaojine || 0)
+            const kaipiaoshue = new Decimal(row.kaipiaoshue || 0)
+            return kaipiaojine.plus(kaipiaoshue).toFixed(2)
+          }
+        },
+        { 
+          prop: 'shoukuanjine', 
+          label: '收款金额', 
+          width: 120,
+          type: 'highPrecision'
+        },
+        { 
+          prop: 'shuilv', 
+          label: '税率(%)', 
+          width: 100,
+          type: 'variable',
+          calculate: (row) => {
+            const kaipiaojine = new Decimal(row.kaipiaojine || 0)
+            const kaipiaoshue = new Decimal(row.kaipiaoshue || 0)
+            if (kaipiaojine.equals(0)) return '0.00'
+            return kaipiaoshue.dividedBy(kaipiaojine).times(100).toFixed(2)+ '%'
+          }
+        },
+        { prop: 'pingzhenghao', label: '凭证号', width: 120 },
+        { prop: 'beizhu', label: '备注', width: 200 }
+      ],
+      paymentFormFields: {
+        xuhao: 0,
+        jizhangriqi: '',
+        zhaiyao: '',
+        kaipiaojine: 0,
+        kaipiaoshue: 0,
+        jiashuiheji: 0,
+        shoukuanjine: 0,
+        shuilv: 0,
+        pingzhenghao: '',
         beizhu: ''
       }
-    };
-  },
-  mounted() {
-    if (this.$route.params.detailData) {
-      this.detailData = this.$route.params.detailData;
     }
+  },
+  computed: {
+    isCleared() {
+      return this.contractInfo.shifoujieqing === '结清' || 
+             parseFloat(this.contractInfo.yingshouyue_hanshui || 0) <= 0
+    }
+  },
+  async created() {
+    await this.loadContractInfo()
+    await this.loadPaymentDetails()
+    await this.calculateAndUpdateContract()
   },
   methods: {
-    submitForm() {
-      this.$refs.form.validate(valid => {
-        if (valid) {
-          const newContract = { ...this.form };
-          newContract.xuhao = this.detailData.length + 1;
-          this.detailData.push(newContract);
-          this.resetForm();
-          this.dialogVisible = false;
+    formatCurrency(value) {
+      if (!value) return '0.00'
+      return new Decimal(value).toFixed(2)
+    },
+    
+    async loadContractInfo() {
+      try {
+        const contractId = this.$route.params.contractId
+        const contracts = await dbInstance.load('income_contract_management')
+        const contract = contracts.find(c => c.hetongbianhao === contractId)
+        
+        if (contract) {
+          this.contractInfo = contract
+        } else {
+          this.$router.push('/income-contract')
         }
-      });
-    },
-    resetForm() {
-      Object.keys(this.form).forEach(key => {
-        this.form[key] = '';
-      });
-    },
-    handleSelectionChange(val) {
-      this.selectedRows = val;
-    },
-    deleteSelectedRows() {
-      if (this.selectedRows.length > 0) {
-        this.selectedRows.forEach(row => {
-          const index = this.detailData.findIndex(item => item.xuhao === row.xuhao);
-          if (index > -1) {
-            this.detailData.splice(index, 1);
-          }
-        });
-        this.selectedRows = [];
-        // 重新排序序号
-        this.detailData.forEach((item, index) => {
-          item.xuhao = index + 1;
-        });
+      } catch (error) {
+        console.error('加载合同信息失败:', error)
+        this.$router.push('/income-contract')
       }
     },
-    parseExcel() {
-      if (this.file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
-          this.detailData = jsonData.map((item, index) => ({
-            xuhao: index + 1,
-            ...item
-          }));
-        };
-        reader.readAsArrayBuffer(this.file);
+    
+    async loadPaymentDetails() {
+      try {
+        const storageKey = `income_contract_payments_${this.contractInfo.hetongbianhao}`
+        const details = await dbInstance.load(storageKey)
+        
+        if (details && Array.isArray(details)) {
+          this.paymentDetails = details.map((item, index) => ({
+            ...item,
+            xuhao: index + 1
+          }))
+        }
+      } catch (error) {
+        console.error('加载收款明细失败:', error)
       }
     },
-    handleExportTable(tableId) {
-      this.$nextTick(() => {
-        export_excel(tableId);
-      });
+    
+    async updatePaymentData(newData) {
+      this.paymentDetails = newData
+      await this.calculateAndUpdateContract()
     },
-    save() {
-      // 添加保存到后端的逻辑
-      console.log('保存数据', this.detailData);
-    }
+    
+    async calculateAndUpdateContract() {
+      // 计算汇总数据
+      const totalShoukuan = this.paymentDetails.reduce((sum, item) => {
+        return sum.plus(new Decimal(item.shoukuanjine || 0))
+      }, new Decimal(0))
+      
+      const totalKaipiao = this.paymentDetails.reduce((sum, item) => {
+        return sum.plus(new Decimal(item.kaipiaojine || 0))
+      }, new Decimal(0))
+      
+      const totalShuie = this.paymentDetails.reduce((sum, item) => {
+        return sum.plus(new Decimal(item.kaipiaoshue || 0))
+      }, new Decimal(0))
+      
+      const totalJiashui = this.paymentDetails.reduce((sum, item) => {
+        return sum.plus(new Decimal(item.jiashuiheji || 0))
+      }, new Decimal(0))
+
+      const total1 = new Decimal(this.contractInfo.hetongzonge || 0).minus(totalShoukuan)
+      
+      // 更新合同信息
+      const contracts = await dbInstance.load('income_contract_management')
+      const contractIndex = contracts.findIndex(
+        c => c.hetongbianhao === this.contractInfo.hetongbianhao
+      )
+      console.error(contractIndex)
+      console.error(contracts[contractIndex])
+      if (contractIndex !== -1) {
+        const updatedContract = {
+          ...contracts[contractIndex],
+          shoukuanzonge: totalShoukuan.toFixed(2),
+          kaipiaojine: totalKaipiao.toFixed(2),
+          shuie: totalShuie.toFixed(2),
+          kaipiaozonge: totalJiashui.toFixed(2)
+        }
+        
+        // 计算其他衍生字段
+        const hetongzonge = new Decimal(updatedContract.hetongzonge || 0)
+        const yishoukuanbili = hetongzonge.equals(0) 
+          ? '0%' 
+          : totalShoukuan.dividedBy(hetongzonge).times(100).toFixed(2) + '%'
+        
+        updatedContract.yishoukuanbili = yishoukuanbili
+        updatedContract.yingshouyue_hanshui = total1.toFixed(2)
+        updatedContract.shifoujieqing = parseFloat(updatedContract.yingshouyue_hanshui) <= 0 ? '结清' : '未结清'
+        updatedContract.kaipiaoshuie = totalShuie.toFixed(2)
+        contracts[contractIndex] = updatedContract
+        console.error(updatedContract)
+        await dbInstance.save('income_contract_management', contracts)
+        
+        // 更新本地数据
+        this.contractInfo = updatedContract
+        
+    
+      }
+    },
+  },
+  async beforeDestroy() {
+    await this.calculateAndUpdateContract()
   }
-};
+}
 </script>
 
-<style lang="scss" scoped>
-@import '../../styles/app';
-
-.table-header {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 15px;
+<style scoped>
+.page-title {
+  margin-bottom: 20px;
 }
 
-#table {
-  ::v-deep .cell {
-    color: #9f9fad;
-  }
-
-  ::v-deep .el-table__header th {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-
-  ::v-deep .el-table__body tr,
-  ::v-deep .el-table__body td {
-    padding: 0;
-    height: 50px;
-    line-height: 50px;
-  }
-
-  ::v-deep .el-table {
-    background-color: transparent !important;
-    color: #9f9fad !important;
-  }
-
-  ::v-deep .el-table__expanded-cell {
-    background-color: transparent !important;
-  }
-
-  ::v-deep .el-table th,
-  ::v-deep .el-table tr,
-  ::v-deep .el-table td {
-    background-color: transparent;
-  }
+.info-card {
+  margin-bottom: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.clickable {
-  cursor: pointer;
-  color: #9f9fad;
-  text-decoration: underline;
+.info-row {
+  margin-bottom: 10px;
+}
+
+.info-item {
+  padding: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-item:last-child {
+  border-right: none;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #a0a0a0;
+  margin-bottom: 5px;
+}
+
+.info-value {
+  font-size: 16px;
+  color: white;
+  font-weight: 500;
+}
+
+.highlight {
+  color: #ffcc00;
+  font-weight: bold;
+}
+
+.text-success {
+  color: #28a745;
+}
+
+.text-warning {
+  color: #ffc107;
+}
+
+.cleared-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.uncleared-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #ffc107;
+  color: #212529;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-left: 8px;
 }
 </style>
-
- 

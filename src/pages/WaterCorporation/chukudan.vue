@@ -47,8 +47,6 @@
 <script>
 import Widget from '@/components/Widget/Widget'
 import TableTemplate from '@/components/Template/xlsxTable'
-import axios from '@/utils/axios.js'
-import { export_excel2 } from '@/utils/exportExcel2.js'
 
 export default {
   name: 'WaterDisburse',

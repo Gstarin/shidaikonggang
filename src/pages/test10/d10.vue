@@ -69,38 +69,38 @@ export default {
         { 
           prop: 'jkxm', 
           label: '报销类型', 
-          width: 120,
+          width: 150,
           editable: true
         },
         { 
           prop: 'money', 
           label: '开支项目和物品名', 
-          width: 180,
+          width: 250,
           editable: true
         },
         { 
           prop: 'name', 
           label: '用途', 
-          width: 120,
+          width: 200,
           editable: true
         },
         { 
           prop: 'number', 
           label: '金额', 
-          width: 100, 
+          width: 150, 
           type: 'number',
           editable: true
         },
         { 
           prop: 'beizhu', 
           label: '领取方式',
-          width: 120,
+          width: 150,
           editable: true
         },
         { 
           prop: 'date', 
           label: '申请日期', 
-          width: 180, 
+          width: 200, 
           type: 'date',
           format: 'yyyy-MM-dd'
         }

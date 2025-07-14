@@ -72,7 +72,7 @@ export default {
 
     jump()
     {
-      if(this.link=='/app/test13/jg') window.open('http://60.10.203.59:24281/snmis/enterprisePortal?loginType=outside', '_blank');
+      //if(this.link=='/app/test13/jg') window.open('http://60.10.203.59:24281/snmis/enterprisePortal?loginType=outside', '_blank');
     }
   },
   computed: {

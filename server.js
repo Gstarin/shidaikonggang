@@ -10,225 +10,12 @@ const multer = require('multer');
 const DATA_DIR = path.join(__dirname, 'data');
 const BACKUP_DIR = path.join(__dirname, 'backups');
 const LOG_DIR = path.join(__dirname, 'logs');
-
-// 备份配置
-const BACKUP_CONFIG = {
-  // 分层备份策略
-  recent: {
-    maxCount: 5,        // 最近5个备份
-    maxAgeDays: 1       // 1天内的备份
-  },
-  daily: {
-    maxCount: 7,        // 每日备份保留7个
-    maxAgeDays: 7       // 7天内的每日备份
-  },
-  weekly: {
-    maxCount: 4,        // 每周备份保留4个
-    maxAgeDays: 28      // 4周内的每周备份
-  },
-  monthly: {
-    maxCount: 6,        // 每月备份保留6个
-    maxAgeDays: 180     // 6个月内的每月备份
-  },
-  maxTotalBackupSize: 200 * 1024 * 1024  // 总备份大小限制200MB
-};
+const uploadsDir = path.join(__dirname, 'uploads');
 
 // 启用CORS
 app.use(cors());
+app.use(express.json({ limit: '500mb' }))
 
-// 启用JSON解析
-app.use(express.json({ limit: '50mb' }));
-
-
-// 日志记录函数
-async function writeLog(action, filename, ip, success, error = null) {
-  try {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      action,
-      filename,
-      ip,
-      success,
-      error: error ? error.message : null
-    };
-    
-    const logFile = path.join(LOG_DIR, `${new Date().toISOString().split('T')[0]}.log`);
-    const logLine = JSON.stringify(logEntry) + '\n';
-    
-    await fs.appendFile(logFile, logLine);
-  } catch (logError) {
-    console.error('写入日志失败:', logError);
-  }
-}
-
-// 获取备份的时间分类
-function getBackupCategory(backupTime) {
-  const now = new Date();
-  const ageInDays = (now - backupTime) / (1000 * 60 * 60 * 24);
-  
-  if (ageInDays <= 1) return 'recent';
-  if (ageInDays <= 7) return 'daily';
-  if (ageInDays <= 28) return 'weekly';
-  if (ageInDays <= 180) return 'monthly';
-  return 'old';
-}
-
-// 智能备份清理（分层保留策略）
-async function smartCleanupBackups(filename) {
-  try {
-    const files = await fs.readdir(BACKUP_DIR);
-    const fileBackups = files
-      .filter(file => file.startsWith(`${filename}_`) && file.endsWith('.json'))
-      .map(file => ({
-        name: file,
-        path: path.join(BACKUP_DIR, file),
-        time: fs.stat(path.join(BACKUP_DIR, file)).then(stats => stats.mtime)
-      }));
-
-    // 等待所有文件状态
-    for (let backup of fileBackups) {
-      backup.time = await backup.time;
-    }
-
-    // 按时间排序，最新的在前
-    fileBackups.sort((a, b) => b.time - a.time);
-
-    // 分类备份文件
-    const categorized = {
-      recent: [],
-      daily: [],
-      weekly: [],
-      monthly: [],
-      old: []
-    };
-
-    for (let backup of fileBackups) {
-      const category = getBackupCategory(backup.time);
-      categorized[category].push(backup);
-    }
-
-    // 对于daily、weekly、monthly，只保留每个时间段的第一个备份
-    const toKeep = new Set();
-    
-    // 保留最近的备份
-    categorized.recent.slice(0, BACKUP_CONFIG.recent.maxCount).forEach(b => toKeep.add(b.name));
-    
-    // 保留每日第一个备份
-    const dailyGroups = new Map();
-    categorized.daily.forEach(backup => {
-      const day = backup.time.toISOString().split('T')[0];
-      if (!dailyGroups.has(day)) {
-        dailyGroups.set(day, backup);
-      }
-    });
-    Array.from(dailyGroups.values()).slice(0, BACKUP_CONFIG.daily.maxCount).forEach(b => toKeep.add(b.name));
-    
-    // 保留每周第一个备份
-    const weeklyGroups = new Map();
-    categorized.weekly.forEach(backup => {
-      const week = Math.floor(backup.time.getTime() / (7 * 24 * 60 * 60 * 1000));
-      if (!weeklyGroups.has(week)) {
-        weeklyGroups.set(week, backup);
-      }
-    });
-    Array.from(weeklyGroups.values()).slice(0, BACKUP_CONFIG.weekly.maxCount).forEach(b => toKeep.add(b.name));
-    
-    // 保留每月第一个备份
-    const monthlyGroups = new Map();
-    categorized.monthly.forEach(backup => {
-      const month = `${backup.time.getFullYear()}-${backup.time.getMonth()}`;
-      if (!monthlyGroups.has(month)) {
-        monthlyGroups.set(month, backup);
-      }
-    });
-    Array.from(monthlyGroups.values()).slice(0, BACKUP_CONFIG.monthly.maxCount).forEach(b => toKeep.add(b.name));
-
-    // 删除不需要保留的备份
-    for (let backup of fileBackups) {
-      if (!toKeep.has(backup.name)) {
-        try {
-          await fs.unlink(backup.path);
-          console.log(`删除备份: ${backup.name} (${getBackupCategory(backup.time)})`);
-        } catch (err) {
-          console.error(`删除备份失败: ${backup.name}`, err);
-        }
-      }
-    }
-
-    console.log(`${filename} 备份清理完成，保留 ${toKeep.size} 个备份`);
-    
-  } catch (error) {
-    console.error('智能备份清理失败:', error);
-  }
-}
-
-// 检查备份总大小
-async function checkBackupSize() {
-  try {
-    const files = await fs.readdir(BACKUP_DIR);
-    let totalSize = 0;
-    
-    for (let file of files) {
-      const stats = await fs.stat(path.join(BACKUP_DIR, file));
-      totalSize += stats.size;
-    }
-
-    if (totalSize > BACKUP_CONFIG.maxTotalBackupSize) {
-      console.warn(`备份总大小超限: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
-      
-      // 删除最旧的备份文件直到大小符合要求
-      const allBackups = [];
-      for (let file of files) {
-        const filePath = path.join(BACKUP_DIR, file);
-        const stats = await fs.stat(filePath);
-        allBackups.push({ name: file, path: filePath, time: stats.mtime, size: stats.size });
-      }
-      
-      allBackups.sort((a, b) => a.time - b.time); // 最旧的在前
-      
-      let currentSize = totalSize;
-      for (let backup of allBackups) {
-        if (currentSize <= BACKUP_CONFIG.maxTotalBackupSize) break;
-        
-        await fs.unlink(backup.path);
-        currentSize -= backup.size;
-        console.log(`删除备份以释放空间: ${backup.name}`);
-      }
-    }
-  } catch (error) {
-    console.error('检查备份大小失败:', error);
-  }
-}
-
-// 备份数据文件
-async function backupFile(filename) {
-  try {
-    const sourceFile = path.join(DATA_DIR, `${filename}.json`);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(BACKUP_DIR, `${filename}_${timestamp}.json`);
-    
-    // 检查源文件是否存在
-    try {
-      await fs.access(sourceFile);
-      await fs.copyFile(sourceFile, backupFile);
-      console.log(`备份创建: ${backupFile}`);
-      
-      // 智能清理该文件的旧备份
-      await smartCleanupBackups(filename);
-      
-      // 检查总备份大小
-      await checkBackupSize();
-      
-    } catch (err) {
-      if (err.code !== 'ENOENT') {
-        throw err;
-      }
-    }
-  } catch (error) {
-    console.error('备份文件失败:', error);
-  }
-}
 
 // 确保目录存在
 async function ensureDirectories() {
@@ -240,6 +27,147 @@ async function ensureDirectories() {
     console.error('创建目录失败:', error);
   }
 }
+
+async function ensureDataDir(comfrom) {
+  const dirPath = path.join(DATA_DIR, comfrom);
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+  } catch (error) {
+    console.error(`创建目录失败: ${dirPath}`, error);
+  }
+}
+
+// 静态文件服务 - 放在API路由之后
+app.use(express.static(path.join(__dirname, 'dist')));
+// 静态文件服务 - 添加这行
+// 添加静态文件服务中间件
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store');
+  }
+}));
+app.use('/static_files', express.static(path.join(__dirname, 'static_files')));
+
+
+app.post('/api/save-data', async (req, res) => {
+  try {
+    const { comfrom, filename, data } = req.body;
+    
+    // 验证输入参数
+    if (!comfrom || !filename || !data) {
+      return res.status(400).json({ success: false, error: '缺少必要参数' });
+    }
+    
+    // 确保目录存在
+    await ensureDataDir(comfrom);
+    
+    // 构建相对路径
+    const relativeDir = path.join(DATA_DIR, comfrom);
+    
+    // 验证路径是否在允许的目录内
+    const resolvedDir = path.resolve(relativeDir);
+    
+    // 文件路径
+    const filePath = path.join(relativeDir, filename);
+    const latestFilePath = path.join(relativeDir, 'latest.json');
+    const historyFilePath = path.join(relativeDir, 'history.json');
+    
+    // 检查latest.json是否存在，不存在则创建空数组
+    let latestData = [];
+    try {
+      const latestFileContent = await fs.readFile(latestFilePath, 'utf8');
+      latestData = JSON.parse(latestFileContent);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // 文件不存在，初始化为空数组
+        await fs.writeFile(latestFilePath, '[]', 'utf8');
+      } else {
+        throw error;
+      }
+    }
+    
+    // 初始化history.json如果不存在
+    let historyData = [];
+    try {
+      const historyFileContent = await fs.readFile(historyFilePath, 'utf8');
+      historyData = JSON.parse(historyFileContent);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // 文件不存在，初始化为空数组
+        await fs.writeFile(historyFilePath, '[]', 'utf8');
+      } else {
+        throw error;
+      }
+    }
+    
+    // 比较新数据与latest.json内容
+    const newData = JSON.parse(data);
+    if (JSON.stringify(latestData) === JSON.stringify(newData)) {
+      // 数据相同，不保存，直接返回latest.json路径
+      return res.json({ 
+        success: true,
+        message: '数据未变化，未执行保存',
+        path: latestFilePath
+      });
+    }
+    // 数据不同，准备历史记录
+    const filePath1 = `data/${comfrom}/${filename}`;
+    const timestamp = new Date().toISOString();
+    const historyEntry = {
+      timestamp,
+      filePath:filePath1,
+    };
+    // 添加到历史记录数组开头
+    historyData.unshift(historyEntry);
+    
+    // 保存文件、更新latest.json和history.json
+    await Promise.all([
+      fs.writeFile(filePath, data, 'utf8'),
+      fs.writeFile(latestFilePath, data, 'utf8'),
+      fs.writeFile(historyFilePath, JSON.stringify(historyData, null, 2), 'utf8')
+    ]);
+    
+    res.json({ 
+      success: true,
+      message: '数据保存成功',
+      path: latestFilePath.replace(__dirname, ''),  // 返回相对路径
+      historyPath: historyFilePath.replace(__dirname, '')
+    });
+  } catch (error) {
+    console.error('保存数据失败:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// 从服务器加载数据 - 简化版，直接读取latest.json
+app.get('/api/load-data', async (req, res) => {
+  try {
+    const { comfrom } = req.query;
+    const latestFilePath = path.join(DATA_DIR, comfrom, 'latest.json');
+    
+    // 检查文件是否存在
+    try {
+      await fs.access(latestFilePath);
+    } catch (error) {
+      // 文件不存在，返回空
+      return res.json(null);
+    }
+    
+    // 读取最新的文件
+    const fileContent = await fs.readFile(latestFilePath, 'utf8');
+    res.json(JSON.parse(fileContent));
+  } catch (error) {
+    console.error('加载数据失败:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
 // ==================== 新增文件上传接口 ====================
 // 1. 修改Multer配置
 // 修改后的Multer配置
@@ -262,41 +190,6 @@ const upload = multer({
     cb(null, true);
   }
 });
-
-// 2. 修改上传路由
-app.post('/api/uploads', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      console.log('请求体:', req.body); // 调试日志
-      console.log('请求头:', req.headers); // 调试日志
-      throw new Error('未接收到文件');
-    }
-
-    console.log('接收到的文件:', req.file); // 调试日志
-    const serverUrl = `${req.protocol}://${req.get('host')}`;
-    // 返回文件信息
-    res.json({
-      success: true,
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-      path: `/uploads/${encodeURIComponent(req.file.filename)}`,
-      url: `${serverUrl}/uploads/${req.file.filename}`,
-    });
-
-  } catch (error) {
-    console.error('文件上传失败:', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: '请检查请求是否包含文件'
-    });
-  }
-});
-
-// ==================== 结束新增 ====================
-// API路由
-// 保存数据
 app.post('/api/save/:filename', async (req, res) => {
   const clientIP = req.ip || req.connection.remoteAddress;
   const { filename } = req.params;
@@ -316,18 +209,81 @@ app.post('/api/save/:filename', async (req, res) => {
     console.log(`数据已保存到: ${filePath}`);
     
     // 记录操作日志
-    await writeLog('SAVE', filename, clientIP, true);
     
     res.json({ success: true });
   } catch (error) {
     console.error('保存数据错误:', error);
     
     // 记录错误日志
-    await writeLog('SAVE', filename, clientIP, false, error);
     
     res.status(500).json({ error: '保存数据失败' });
   }
 });
+// 2. 修改上传路由
+app.post('/api/uploads', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      console.log('请求体:', req.body); // 调试日志
+      console.log('请求头:', req.headers); // 调试日志
+      throw new Error('未接收到文件');
+    }
+ 
+    console.log('接收到的文件:', req.file); // 调试日志
+    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    // 返回文件信息
+    res.json({
+      success: true,
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      path: `/uploads/${encodeURIComponent(req.file.filename)}`,
+      url: `${"http://localhost:3000"}/uploads/${req.file.filename}`,
+    });
+
+  } catch (error) {
+    console.error('文件上传失败:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: '请检查请求是否包含文件'
+    });
+  }
+});
+// 通用文件获取接口
+app.get('/api/get-file', async (req, res) => {
+  try {
+    const { path: relativePath } = req.query;
+
+    const requestedPath = path.join(__dirname, relativePath);
+    // 检查文件是否存在
+    try {
+      
+      await fs.access(requestedPath);
+    } catch (err) {
+      return res.status(404).json({ 
+        success: false,
+        error: '文件不存在' 
+      });
+    }
+    
+    // 读取文件内容
+    const fileContent = await fs.readFile(requestedPath, 'utf8');
+    
+    // 根据文件类型返回不同格式
+    if (requestedPath.endsWith('.json')) {
+      res.json(JSON.parse(fileContent));
+    } else {
+      res.send(fileContent);
+    }
+  } catch (error) {
+    console.error('获取文件失败:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
 // 在服务器端添加一个专门的文件下载路由
 app.get('/download/:filename', (req, res) => {
   const filePath = path.join(uploadsDir, req.params.filename);
@@ -337,7 +293,7 @@ app.get('/download/:filename', (req, res) => {
       res.status(404).send('文件不存在');
       return;
     }
-
+    console.error(filePath);
     // 设置下载头
     res.download(filePath, req.query.originalname || req.params.filename, (err) => {
       if (err) {
@@ -351,8 +307,10 @@ app.delete('/api/delete', async (req, res) => {
   try {
     const { filename, path: filePath } = req.body;
     
+    // 如果缺少参数，直接返回成功
     if (!filename || !filePath) {
-      return res.status(400).json({ success: false, error: '缺少必要参数' });
+      console.log('缺少参数，跳过删除操作');
+      return res.json({ success: true, message: '缺少参数，跳过删除操作' });
     }
     
     // 从URL路径转换为服务器文件系统路径
@@ -361,11 +319,11 @@ app.delete('/api/delete', async (req, res) => {
     
     console.log('尝试删除文件:', absolutePath);
     
-    // 检查文件是否存在
+    // 检查文件是否存在，如果不存在直接返回成功
     try {
       await fs.access(absolutePath);
     } catch (err) {
-      return res.status(404).json({ success: false, error: '文件不存在' });
+      console.log('文件不存在，跳过删除操作');
     }
     
     // 删除文件
@@ -373,106 +331,12 @@ app.delete('/api/delete', async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
-    console.error('删除文件失败:', error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message || '删除文件失败'
+    console.error('删除文件过程中发生意外错误:', error);
+    // 对于其他意外错误，仍然返回成功
+    res.json({ 
+      success: true,
+      message: '删除过程中发生意外错误，但已跳过'
     });
-  }
-});
-// 读取数据
-app.get('/api/data/:filename', async (req, res) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const { filename } = req.params;
-  
-  try {
-    const filePath = path.join(DATA_DIR, `${filename}.json`);
-    
-    try {
-      const data = await fs.readFile(filePath, 'utf8');
-      
-      // 记录读取日志
-      await writeLog('READ', filename, clientIP, true);
-      
-      res.json(JSON.parse(data));
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        // 文件不存在时返回空数组
-        await writeLog('READ', filename, clientIP, true);
-        res.json([]);
-      } else {
-        throw err;
-      }
-    }
-  } catch (error) {
-    console.error('读取数据错误:', error);
-    
-    // 记录错误日志
-    await writeLog('READ', filename, clientIP, false, error);
-    
-    res.status(500).json({ error: '读取数据失败' });
-  }
-});
-
-// 获取备份列表
-app.get('/api/backups/:filename', async (req, res) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const { filename } = req.params;
-  
-  try {
-    const files = await fs.readdir(BACKUP_DIR);
-    const fileBackups = files
-      .filter(file => file.startsWith(`${filename}_`) && file.endsWith('.json'))
-      .map(async file => {
-        const filePath = path.join(BACKUP_DIR, file);
-        const stats = await fs.stat(filePath);
-        return {
-          name: file,
-          timestamp: stats.mtime,
-          size: stats.size,
-          category: getBackupCategory(stats.mtime)
-        };
-      });
-
-    const backups = await Promise.all(fileBackups);
-    backups.sort((a, b) => b.timestamp - a.timestamp);
-
-    await writeLog('LIST_BACKUPS', filename, clientIP, true);
-    res.json(backups);
-    
-  } catch (error) {
-    console.error('获取备份列表错误:', error);
-    await writeLog('LIST_BACKUPS', filename, clientIP, false, error);
-    res.status(500).json({ error: '获取备份列表失败' });
-  }
-});
-
-// 恢复备份
-app.post('/api/restore/:filename/:backupName', async (req, res) => {
-  const clientIP = req.ip || req.connection.remoteAddress;
-  const { filename, backupName } = req.params;
-  
-  try {
-    const backupFile = path.join(BACKUP_DIR, backupName);
-    const targetFile = path.join(DATA_DIR, `${filename}.json`);
-    
-    // 验证备份文件是否存在
-    await fs.access(backupFile);
-    
-    // 在恢复前备份当前文件
-    await backupFile(filename);
-    
-    // 恢复备份
-    await fs.copyFile(backupFile, targetFile);
-    console.log(`恢复备份: ${backupName} -> ${filename}.json`);
-    
-    await writeLog('RESTORE', `${filename} from ${backupName}`, clientIP, true);
-    res.json({ success: true, message: '备份恢复成功' });
-    
-  } catch (error) {
-    console.error('恢复备份错误:', error);
-    await writeLog('RESTORE', `${filename} from ${backupName}`, clientIP, false, error);
-    res.status(500).json({ error: '恢复备份失败' });
   }
 });
 
@@ -482,13 +346,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: '服务器内部错误' });
 });
 
-// 静态文件服务 - 放在API路由之后
-app.use(express.static(path.join(__dirname, 'dist')));
-// 静态文件服务 - 添加这行
-// 添加静态文件服务中间件
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/static_files', express.static(path.join(__dirname, 'static_files')));
-
 // 处理所有其他路由，返回index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/index.html'));
@@ -497,36 +354,10 @@ app.get('*', (req, res) => {
 // 启动服务器
 const PORT = process.env.PORT || 3000;
 
-// 定时备份任务（每小时执行一次）
-async function scheduleBackups() {
-  console.log('启动定时备份任务...');
-  
-  setInterval(async () => {
-    try {
-      const files = await fs.readdir(DATA_DIR);
-      const jsonFiles = files.filter(file => file.endsWith('.json'));
-      
-      for (const file of jsonFiles) {
-        const filename = file.replace('.json', '');
-        await backupFile(filename);
-      }
-      
-      console.log(`定时备份完成，共备份 ${jsonFiles.length} 个文件`);
-    } catch (error) {
-      console.error('定时备份失败:', error);
-    }
-  }, 60 * 60 * 1000); // 每小时
-}
-
 // 确保目录存在后再启动服务器
 ensureDirectories().then(() => {
   app.listen(PORT, () => {
     console.log(`服务器运行在 http://localhost:${PORT}`);
-    console.log('数据存储目录:', DATA_DIR);
-    console.log('备份目录:', BACKUP_DIR);
-    console.log('日志目录:', LOG_DIR);
     
-    // 启动定时备份
-    scheduleBackups();
   });
 });

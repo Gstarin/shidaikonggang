@@ -146,14 +146,7 @@ export default {
       }
     };
   },
-  
-  mounted() {
-    this.loadData();
-  },
 
-  beforeDestroy() {
-    this.saveData();
-  },
 
   methods: {
     updateTableData(newData) {

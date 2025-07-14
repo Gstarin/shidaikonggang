@@ -78,7 +78,13 @@ export default {
       this.tableData = newData
     },
     goToDetailPage(row) {
-      this.$router.push({ name: 'detail', params: { contract: row } })
+      // 根据原程序中的路由跳转逻辑实现
+      this.$router.push({
+        path: "/app/tzfz/Project",
+        query: {
+          hetong: row.xiangmumingcheng
+        }
+      });
     },
     getDropdownOptions(field) {
       const options = new Set()
@@ -87,7 +93,6 @@ export default {
       })
       return Array.from(options)
     },
-    // 以下方法可以移到 TableTemplate 中
     
   }
 }

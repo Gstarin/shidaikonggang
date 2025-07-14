@@ -58,6 +58,12 @@ export default {
       // 表格列配置
       tableColumns: [
         { 
+          prop: 'number', 
+          label: '序号', 
+          width: 180, 
+          type: 'number',
+        },
+        { 
           prop: 'date', 
           label: '缴费日期', 
           width: 180, 
@@ -97,6 +103,7 @@ export default {
       ],
       // 表单字段配置
       formFields: {
+        number: '',
         date:'',
         mzwcs:'',
         place:'',
@@ -106,9 +113,6 @@ export default {
 
       }
     }
-  },
-  mounted() {
-    this.loadData()
   },
   methods: {
     

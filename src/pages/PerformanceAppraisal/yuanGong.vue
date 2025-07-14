@@ -208,26 +208,24 @@ export default {
       }
     },
     
-    // 加载员工数据
     async loadData() {
-      try {
-        // 先尝试从本地加载
-        const savedData = await dbInstance.load(this.storageKey)
-        if (savedData && savedData.employees) {
-          this.boxes = savedData.employees
-          this.fileHandles = savedData.fileHandles || {}
-          return
-        }
-        
-        // 本地没有则从API加载
-        const response = await axios.get('/api/data/grxx')
-        this.processEmployeeData(response.data)
-        
-      } catch (error) {
-        console.error('加载数据失败:', error)
-        this.$message.error('加载数据失败，请重试')
-      }
-    },
+  try {
+    // Load from db.js which handles local+server loading
+    const savedData = await dbInstance.load(this.storageKey)
+    if (savedData) {
+      this.boxes = savedData.employees || []
+      await this.loadImageCache()
+    } else {
+      // Fallback to API if no local data
+      const response = await axios.get('/api/data/grxx')
+      this.processEmployeeData(response.data)
+      await this.saveAllData() // Save the API data
+    }
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    this.$message.error('加载数据失败，请重试')
+  }
+},
     
     // 处理从API获取的员工数据
     processEmployeeData(apiData) {
@@ -338,24 +336,24 @@ export default {
     
     // 保存所有数据
 	async saveAllData() {
-	try {
-		const dataToSave = {
-		employees: this.boxes.map(emp => {
-			const empCopy = {...emp}
-			// 不保存图片数据，只保存引用信息
-			delete empCopy.avatarFile
-			return empCopy
-		}),
-		lastUpdated: new Date().toISOString()
-		}
-		
-		await dbInstance.save(this.storageKey, dataToSave)
-		this.$message.success('数据保存成功')
-	} catch (error) {
-		console.error('保存数据失败:', error)
-		this.$message.error('保存数据失败: ' + error.message)
-	}
-	},
+  try {
+    const dataToSave = {
+      employees: this.boxes.map(emp => {
+        const empCopy = {...emp}
+        // Ensure we don't save file objects
+        delete empCopy.avatarFile
+        return empCopy
+      }),
+      lastUpdated: new Date().toISOString()
+    }
+    
+    await dbInstance.save(this.storageKey, dataToSave)
+    this.$message.success('数据保存成功')
+  } catch (error) {
+    console.error('保存数据失败:', error)
+    this.$message.error('保存数据失败: ' + error.message)
+  }
+},
     
     // 导出数据
     async exportAllData() {
@@ -544,9 +542,6 @@ async processAvatarUpload(event) {
     // 验证图片
     if (!file.type.match('image.*')) {
       throw new Error('请选择图片文件')
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error('图片大小不能超过2MB')
     }
     
     // 创建FormData对象

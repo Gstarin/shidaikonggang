@@ -74,9 +74,9 @@
       <NavLink
         :activeItem="activeItem"
         header="财务金融部"
-        link="/app/MunicipalCorporation/total"
+        link="/app/MunicipalCorporation"
         iconName="fa fa-institution"
-        index="test5"
+        index="MunicipalCorporation"
         :childrenLinks="[  
 			{header: '收支信息', link: '/app/MunicipalCorporation/total' },    
 			{header: '支出信息', link: '/app/MunicipalCorporation/Disburse' },
