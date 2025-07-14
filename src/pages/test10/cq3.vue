@@ -52,6 +52,7 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
+<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 import moment from 'moment'
@@ -151,11 +152,61 @@ export default {
         quantity: 0,
         jine: 0,
         total: 0,
+=======
+import XlsxTable from '@/components/Template/xlsxTable.vue'
+
+export default {
+  name: 'VehicleMaintenance',
+  components: {
+    Widget,
+    XlsxTable
+  },
+  data() {
+    return {
+      selectMonth: null,
+      tableData: [],
+      columns: [
+        { prop: 'id', label: '序号', type: 'number' },
+        { prop: 'car_id', label: '车牌号码' },
+        { prop: 'car', label: '车型' },
+        { prop: 'miles1', label: '上次保养里程' },
+        { prop: 'date1', label: '上次保养日期', type: 'date' },
+        { prop: 'miles2', label: '本次保养里程' },
+        { prop: 'date2', label: '本次保养日期', type: 'date' },
+        { prop: 'xm', label: '保养项目' },
+        { prop: 'quantity', label: '数量', type: 'number' },
+        { prop: 'jine', label: '金额（元）', type: 'number' },
+        {
+          prop: 'total',
+          label: '费用合计',
+          type: 'variable',
+          calculate: row => {
+            const q = parseFloat(row.quantity) || 0
+            const j = parseFloat(row.jine) || 0
+            return (q * j).toFixed(2)
+          }
+        },
+        { prop: 'person', label: '维保人' }
+      ],
+      formFields: {
+        id: null,
+        car_id: '',
+        car: '',
+        miles1: '',
+        date1: null,
+        miles2: '',
+        date2: null,
+        xm: '',
+        quantity: '',
+        jine: '',
+        total: '',
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         person: ''
       }
     }
   },
   methods: {
+<<<<<<< HEAD
 
     
     updateTableData(newData) {
@@ -177,8 +228,19 @@ export default {
     
     clearMonthFilter() {
       this.selectedYearMonth = ''
+=======
+    monthFilter(row) {
+      if (!this.selectMonth) return true
+      if (!row.date2) return false
+      const d = new Date(row.date2)
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return month === this.selectMonth
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
     }
   }
 }
 </script>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29

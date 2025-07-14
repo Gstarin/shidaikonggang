@@ -52,6 +52,7 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
+<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import moment from 'moment'
 
@@ -102,16 +103,46 @@ export default {
       ],
       formFields: {
         id: 0,
+=======
+import XlsxTable from '@/components/Template/xlsxTable.vue'
+
+export default {
+  name: 'CarInspection',
+  components: {
+    Widget,
+    XlsxTable
+  },
+  data() {
+    return {
+      selectMonth: null,
+      tableData: [],
+      columns: [
+        { prop: 'id', label: '序号', type: 'number' },
+        { prop: 'car', label: '车辆类型' },
+        { prop: 'car_id', label: '车牌号' },
+        { prop: 'date1', label: '年审日期', type: 'date' },
+        { prop: 'date2', label: '有效期至', type: 'date' },
+        { prop: 'total', label: '年审费(元)', type: 'number' },
+        { prop: 'beizhu', label: '备注' }
+      ],
+      formFields: {
+        id: null,
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         car: '',
         car_id: '',
         date1: null,
         date2: null,
+<<<<<<< HEAD
         total: 0,
+=======
+        total: '',
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         beizhu: ''
       }
     }
   },
   methods: {
+<<<<<<< HEAD
     updateTableData(newData) {
       // 更新ID序号
       this.tableData = newData.map((item, index) => ({
@@ -140,3 +171,14 @@ export default {
   }
 }
 </script>
+=======
+    monthFilter(row) {
+      if (!this.selectMonth || !row.date1) return true
+      const d = new Date(row.date1)
+      const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return formatted === this.selectMonth
+    }
+  }
+}
+</script>
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29

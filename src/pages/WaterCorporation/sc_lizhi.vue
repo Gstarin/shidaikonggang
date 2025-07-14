@@ -4,6 +4,7 @@
       <b-breadcrumb-item>青清水务</b-breadcrumb-item>
       <b-breadcrumb-item active>地表水厂离职人员</b-breadcrumb-item>
     </b-breadcrumb>
+<<<<<<< HEAD
     <h1 class="page-title fw-semi-bold">地表水厂离职人员</h1>
     <b-row>
       <b-col>
@@ -37,6 +38,30 @@
               />
             </template>
           </TableTemplate>
+=======
+
+    <b-row>
+      <b-col>
+        <Widget title="地表水厂离职人员" customHeader settings close>
+          <xlsxTable
+            v-model:tableData="items"
+            :columns="columns"
+            :formFields="formFields"
+            apiEndpoint="/api/save/sclizhi"
+            storageKey="sclizhi"
+            :rowFilter="row => isMonthMatched(row.lizhi)"
+          >
+            <template #custom-filter1>
+              <el-date-picker
+                v-model="selectMonth"
+                type="month"
+                placeholder="筛选离职月份"
+                value-format="yyyy-MM"
+                style="margin-right: 15px"
+              />
+            </template>
+          </xlsxTable>
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         </Widget>
       </b-col>
     </b-row>
@@ -45,6 +70,7 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
+<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 
@@ -69,12 +95,41 @@ export default {
         { prop: 'people', label: '劳动关系', width: 120 },
         { prop: 'jine', label: '工作地点', width: 120 },
         { prop: 'note', label: '备注', width: 200 }
+=======
+import xlsxTable from '@/components/Template/xlsxTable'
+
+export default {
+  name: 'WaterPacLizhi',
+  components: { Widget, xlsxTable },
+  data() {
+    return {
+      items: [],
+      selectMonth: null,
+      columns: [
+        { prop: 'time', label: '序号', type: 'text' },
+        { prop: 'name', label: '姓名', type: 'text' },
+        { prop: 'danwei', label: '性别', type: 'text' },
+        { prop: 'number', label: '年龄', type: 'number' },
+        { prop: 'remaining', label: '出生日期', type: 'date' },
+        { prop: 'sunhao', label: '身份证号', type: 'text' },
+        { prop: 'phone', label: '电话', type: 'text' },
+        { prop: 'job', label: '岗位', type: 'text' },
+        { prop: 'time2', label: '入职时间', type: 'date' },
+        { prop: 'lizhi', label: '离职时间', type: 'date' },
+        { prop: 'people', label: '劳动关系', type: 'text' },
+        { prop: 'jine', label: '工作地点', type: 'text' },
+        { prop: 'note', label: '备注', type: 'text' }
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
       ],
       formFields: {
         time: '',
         name: '',
         danwei: '',
+<<<<<<< HEAD
         number: 0,
+=======
+        number: '',
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         remaining: '',
         sunhao: '',
         phone: '',
@@ -83,12 +138,17 @@ export default {
         lizhi: '',
         people: '',
         jine: '',
+<<<<<<< HEAD
         note: '',
         selected: false
+=======
+        note: ''
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
       }
     }
   },
   methods: {
+<<<<<<< HEAD
     updateTableData(newData) {
       this.employees = newData
     },
@@ -110,8 +170,20 @@ export default {
     
     clearMonthFilter() {
       this.selectedYearMonth = ''
+=======
+    isMonthMatched(dateStr) {
+      if (!this.selectMonth) return true
+      if (!dateStr) return false
+      const d = new Date(dateStr)
+      const y = d.getFullYear()
+      const m = `${d.getMonth() + 1}`.padStart(2, '0')
+      return `${y}-${m}` === this.selectMonth
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
     }
   }
 }
 </script>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29

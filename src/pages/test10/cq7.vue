@@ -42,6 +42,7 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
+<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 
@@ -108,10 +109,52 @@ export default {
         danwei: '',
         quantity: 0,
         jine: 0,
+=======
+import XlsxTable from '@/components/Template/xlsxTable.vue'
+
+export default {
+  name: 'LaborProtection',
+  components: {
+    Widget,
+    XlsxTable
+  },
+  data() {
+    return {
+      selectMonth: null,
+      tableData: [],
+      columns: [
+        { prop: 'id', label: '序号', type: 'number' },
+        { prop: 'date', label: '日期', type: 'date' },
+        { prop: 'name', label: '用品名称' },
+        { prop: 'price', label: '单价（元）', type: 'number' },
+        { prop: 'danwei', label: '单位' },
+        { prop: 'quantity', label: '数量', type: 'number' },
+        {
+          prop: 'jine',
+          label: '金额（元）',
+          type: 'variable',
+          calculate: row => {
+            const price = parseFloat(row.price) || 0
+            const qty = parseFloat(row.quantity) || 0
+            return (price * qty).toFixed(2)
+          }
+        },
+        { prop: 'beizhu', label: '备注' }
+      ],
+      formFields: {
+        id: null,
+        date: null,
+        name: '',
+        price: '',
+        danwei: '',
+        quantity: '',
+        jine: '',
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
         beizhu: ''
       }
     }
   },
+<<<<<<< HEAD
   mounted() {
     this.loadData()
   },
@@ -146,6 +189,15 @@ export default {
       this.selectedYearMonth = ''
     },
     
+=======
+  methods: {
+    monthFilter(row) {
+      if (!this.selectMonth || !row.date) return true
+      const d = new Date(row.date)
+      const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return formatted === this.selectMonth
+    }
+>>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
   }
 }
 </script>
