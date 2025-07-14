@@ -53,7 +53,6 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
-<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 
@@ -107,39 +106,12 @@ export default {
           editable: true,
           calculate: (row) => {
             // 计算总保费 = 交强 + 商业险 + 车船税
-=======
-import XlsxTable from '@/components/Template/xlsxTable.vue'
-
-export default {
-  name: 'CarInsurance',
-  components: {
-    Widget,
-    XlsxTable
-  },
-  data() {
-    return {
-      selectMonth: null,
-      tableData: [],
-      columns: [
-        { prop: 'id', label: '序号', type: 'number' },
-        { prop: 'car', label: '车辆类型' },
-        { prop: 'car_id', label: '车牌号' },
-        { prop: 'jq', label: '交强', type: 'number' },
-        { prop: 'syx', label: '商业险', type: 'number' },
-        { prop: 'ccs', label: '车船税', type: 'number' },
-        {
-          prop: 'zbf',
-          label: '总保费',
-          type: 'variable',
-          calculate: row => {
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
             const jq = parseFloat(row.jq) || 0
             const syx = parseFloat(row.syx) || 0
             const ccs = parseFloat(row.ccs) || 0
             return (jq + syx + ccs).toFixed(2)
           }
         },
-<<<<<<< HEAD
         { 
           prop: 'date', 
           label: '保险日期', 
@@ -187,29 +159,6 @@ export default {
     
     clearMonthFilter() {
       this.selectedYearMonth = ''
-=======
-        { prop: 'date', label: '保险日期', type: 'date' }
-      ],
-      formFields: {
-        id: null,
-        car: '',
-        car_id: '',
-        jq: '',
-        syx: '',
-        ccs: '',
-        zbf: '',
-        date: null
-      }
-    }
-  },
-  methods: {
-    monthFilter(row) {
-      if (!this.selectMonth) return true
-      if (!row.date) return false
-      const d = new Date(row.date)
-      const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      return formatted === this.selectMonth
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
     }
   }
 }

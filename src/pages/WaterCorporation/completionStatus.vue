@@ -7,7 +7,6 @@
 
     <b-row>
       <b-col>
-<<<<<<< HEAD
         <Widget title="<h5>水厂生产、完成情况</h5>" customHeader settings close>
           <TableTemplate
             ref="tableTemplate"
@@ -59,35 +58,6 @@
           <!-- 添加折线图的 canvas -->
           <div v-if="chartVisible" style="margin-top: 20px;">
             <canvas id="productionChart"></canvas>
-=======
-        <Widget title="水厂生产、完成情况" customHeader settings close>
-          <xlsxTable
-            v-model:tableData="tableData"
-            :columns="columns"
-            :formFields="formFields"
-            storageKey="completionStatus"
-            apiEndpoint="/api/save/completionStatus"
-          >
-            <template #custom-filter1>
-              <el-date-picker
-                v-model="selectMonth"
-                type="month"
-                placeholder="选择年月"
-                value-format="yyyy-MM"
-                style="margin-left: 15px"
-              />
-            </template>
-          </xlsxTable>
-
-          <!-- 折线图按钮 -->
-          <div class="text-center mt-4">
-            <b-button variant="success" @click="generateChart">生成折线图</b-button>
-          </div>
-
-          <!-- 折线图区域 -->
-          <div v-if="chartVisible" class="mt-4">
-            <canvas id="completionChart"></canvas>
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
           </div>
         </Widget>
       </b-col>
@@ -97,7 +67,6 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
-<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 import { Chart } from 'chart.js'
@@ -161,63 +130,14 @@ export default {
       const pingjiazhiData = this.tableData.map(item => parseFloat(item.pingjiazhi) || 0)
 
       this.chartVisible = true
-=======
-import xlsxTable from '@/components/Template/xlsxTable'
-import { Chart } from 'chart.js'
-
-export default {
-  name: 'completionStatus',
-  components: { Widget, xlsxTable },
-  data() {
-    return {
-      tableData: [],
-      selectMonth: null,
-      chart: null,
-      chartVisible: false,
-      formFields: {
-        yuefen: '',
-        zongliang: '',
-        changquxiaojian: '',
-        yuezuidazhi: '',
-        yuezuidizhi: '',
-        pingjiazhi: '',
-      },
-      columns: [
-        { prop: 'yuefen', label: '月份', type: 'date', width: 150 },
-        { prop: 'zongliang', label: '总量', type: 'number', width: 150 },
-        { prop: 'changquxiaojian', label: '厂区消减', type: 'number', width: 150 },
-        { prop: 'yuezuidazhi', label: '月最大值', type: 'number', width: 150 },
-        { prop: 'yuezuidizhi', label: '月最小值', type: 'number', width: 150 },
-        { prop: 'pingjiazhi', label: '平均值', type: 'number', width: 150 },
-      ]
-    }
-  },
-  methods: {
-    generateChart() {
-      const labels = this.tableData.map(item => item.yuefen)
-      const getData = key => this.tableData.map(item => parseFloat(item[key]) || 0)
-
-      const datasets = [
-        { label: '总量', data: getData('zongliang'), color: 'rgba(75, 192, 192, 1)' },
-        { label: '厂区消减', data: getData('changquxiaojian'), color: 'rgba(192, 75, 75, 1)' },
-        { label: '月最大值', data: getData('yuezuidazhi'), color: 'rgba(75, 75, 192, 1)' },
-        { label: '月最小值', data: getData('yuezuidizhi'), color: 'rgba(192, 192, 75, 1)' },
-        { label: '平均值', data: getData('pingjiazhi'), color: 'rgba(75, 192, 75, 1)' }
-      ]
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
 
       this.chartVisible = true
       this.$nextTick(() => {
-<<<<<<< HEAD
         const ctx = document.getElementById('productionChart').getContext('2d')
 
         if (this.chart) {
           this.chart.destroy()
         }
-=======
-        const ctx = document.getElementById('completionChart').getContext('2d')
-        if (this.chart) this.chart.destroy()
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
 
         this.chart = new Chart(ctx, {
           type: 'line',
@@ -248,20 +168,14 @@ export default {
 }
 </script>
 
-<<<<<<< HEAD
 <style lang="scss" scoped>
 @import '../../styles/app';
 
 #productionChart {
-=======
-<style scoped>
-#completionChart {
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
   max-width: 100%;
   height: 400px;
   margin: 20px auto;
 }
-<<<<<<< HEAD
 
 .table-footer {
   margin-top: 20px;
@@ -275,6 +189,3 @@ export default {
   margin-right: 15px;
 }
 </style>
-=======
-</style>
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29

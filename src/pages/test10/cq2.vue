@@ -52,7 +52,6 @@
 
 <script>
 import Widget from '@/components/Widget/Widget'
-<<<<<<< HEAD
 import TableTemplate from '@/components/Template/xlsxTable'
 import axios from '@/utils/axios.js'
 
@@ -140,45 +139,5 @@ export default {
       this.selectedYearMonth = ''
     }
   }
-=======
-import XlsxTable from '@/components/Template/xlsxTable.vue' // 你的 TableTemplate.vue 别名为 xlsxTable
-
-export default {
-  name: 'ElectricityCosts',
-  components: {
-    Widget,
-    XlsxTable
-  },
-  data() {
-    return {
-      tableData: [],
-      columns: [
-        { prop: 'id', label: '序号', type: 'number' },
-        { prop: 'date', label: '月份', type: 'date' },
-        { prop: 'bumen', label: '用电部门' },
-        { prop: 'price', label: '单价', type: 'number' },
-        { prop: 'elec', label: '总用电量', type: 'number' },
-        {
-          prop: 'money',
-          label: '总金额',
-          type: 'variable',
-          calculate: row => {
-            const price = parseFloat(row.price) || 0
-            const elec = parseFloat(row.elec) || 0
-            return (price * elec).toFixed(2)
-          }
-        }
-      ],
-      formFields: {
-        id: null,
-        date: null,
-        bumen: '',
-        price: '',
-        elec: '',
-        money: ''
-      }
-    }
-  },
->>>>>>> 5972632f8faa86ea1f83a98c45bb66278ab3ba29
 }
 </script>
